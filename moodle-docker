@@ -139,19 +139,50 @@ if [ "$action" == "start" ]; then
   fi
 
   if [ ! -d "moodle/${selected_version}" ]; then
-    unzip -q "$zip_file" -d "moodle/${selected_version}"
+    unzip -q "$zip_file" -d "moodle/${selected_version}/"
     log "${GREEN}Moodle directory available at ${PWD}moodle/${selected_version}"
   else
     log "${GREEN}Moodle directory available at ${PWD}/moodle/${selected_version}"
   fi
 
-  # Port mapping
-  export COMPOSE_PROJECT_NAME=moodle4010
+  # Port mapping.
+  export COMPOSE_PROJECT_NAME="moodle${selected_version}"
   export MOODLE_DOCKER_DB=mariadb
-  export MOODLE_DOCKER_DB_PORT=34010
-  export MOODLE_DOCKER_SELENIUM_VNC_PORT=594010
-  export MOODLE_DOCKER_WEB_PORT=84010
+  export MOODLE_DOCKER_DB_PORT="330${selected_version}"
+  export MOODLE_DOCKER_SELENIUM_VNC_PORT="590${selected_version}"
+  export MOODLE_DOCKER_WEB_PORT="80${selected_version}"
+  export MOODLE_DOCKER_WWWROOT="${PWD}/moodle/${selected_version}"
 
+  log "${GREEN}envvars"
+  log "$COMPOSE_PROJECT_NAME"
+  log "$MOODLE_DOCKER_DB"
+  log "${YELLOW}DB port: $MOODLE_DOCKER_DB_PORT"
+  log "${YELLOW}VNC port: $MOODLE_DOCKER_SELENIUM_VNC_PORT"
+  log "${YELLOW}Webserver port: $MOODLE_DOCKER_WEB_PORT"
+  log "${YELLOW}Directory: $MOODLE_DOCKER_WWWROOT"
+
+  cp "moodlehq-docker/config.docker-template.php" "$MOODLE_DOCKER_WWWROOT/config.php"
+
+  cd "moodlehq-docker" || abort "moodlehq-docker is missing"
+  bin/moodle-docker-compose up -d
+
+  # Wait for DB to come up (important for oracle/mssql)
+  bin/moodle-docker-wait-for-db
+
+  if [ ! -f "$MOODLE_DOCKER_WWWROOT/installed" ]; then
+
+    # Flag so we don't run this more than once.
+    touch "$MOODLE_DOCKER_WWWROOT/installed"
+
+    bin/moodle-docker-compose exec webserver php admin/cli/install_database.php --agree-license --fullname="$COMPOSE_PROJECT_NAME" \
+      --shortname="$COMPOSE_PROJECT_NAME" --summary="Docker moodle site $COMPOSE_PROJECT_NAME" --adminpass="test" --adminemail="admin@example.com"
+
+    # Initialize behat environment.
+    bin/moodle-docker-compose exec webserver php admin/tool/behat/cli/init.php
+
+    # Initialize phpunit environment.
+    bin/moodle-docker-compose exec webserver php admin/tool/phpunit/cli/init.php
+  fi
 fi
 
 # Check if Docker is available.
@@ -162,6 +193,6 @@ fi
 
 # Check if we have a docker running
 
-# Ask which Moodle version to start.
-
-git submodule update --init --recursive
+if [ "$action" == "update" ]; then
+  git submodule update --init --recursive
+fi

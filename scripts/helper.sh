@@ -94,6 +94,22 @@ function setup() {
     abort "Error: unzip is required to extract the Moodle version."
   fi
 
+  # Check if git is installed
+  if ! command -v git >/dev/null 2>&1; then
+    abort "Error: git is required."
+  fi
+
+  # Search for the application in the /Applications directory
+  if [ ! -d "/Applications/OrbStack.app" ]; then
+    abort "Orbstack is not installed, please install it first."
+  fi
+
+  if [ ! -f "moodlehq-docker/config.docker-template.php" ]; then
+    # Try to solve this issue.
+    git submodule update --init --recursive
+    abort "Git submodule is missing (moodlehq-docker)."
+  fi
+
 }
 
 export -f log
