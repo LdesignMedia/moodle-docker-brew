@@ -68,20 +68,33 @@ function abort() {
 
 # Function to ask for confirmation
 confirm() {
-    while true; do
-        read -r -p "${1:-Are you sure?} [y/N] " response
-        case $response in
-            [yY][eE][sS]|[yY])
-                return 0
-                ;;
-            [nN][oO]|[nN])
-                return 1
-                ;;
-            *)
-                echo "Please answer 'yes' or 'no'."
-                ;;
-        esac
-    done
+  while true; do
+    read -r -p "${1:-Are you sure?} [y/N] " response
+    case $response in
+    [yY][eE][sS] | [yY])
+      return 0
+      ;;
+    [nN][oO] | [nN])
+      return 1
+      ;;
+    *)
+      echo "Please answer 'yes' or 'no'."
+      ;;
+    esac
+  done
+}
+
+# Check if the docker image is running.
+function check_is_running() {
+  log "Check if running ($COMPOSE_PROJECT_NAME)..."
+  local container_name="$COMPOSE_PROJECT_NAME-webserver-1"
+
+  # Check if the container is running
+  if docker ps --filter "name=$container_name" --format "{{.Names}}" | grep -q "^$container_name$"; then
+    log "The container $container_name is running."
+  else
+    abort "The container $container_name is not running."
+  fi
 }
 
 function setup() {
@@ -133,3 +146,4 @@ function setup() {
 export -f log
 export -f abort
 export -f setup
+export -f check_is_running
