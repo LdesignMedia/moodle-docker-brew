@@ -3,6 +3,7 @@
 This brew script simplifies the process of running the Moodle Docker, which can be found at https://github.com/moodlehq/moodle-docker.
 
 ## Features
+- Build for `MacOS` and `OrbStack` (fast docker client)
 - Run multiple Moodle versions simultaneously.
 - Utilize `behat` and `phpunit` commands.
 - Includes multiple checks to ensure error-free execution.
@@ -33,3 +34,9 @@ This brew script simplifies the process of running the Moodle Docker, which can 
 - [ ] Install developer/commander tools
 - [ ] Install directlogin
 - [ ] Reinstall behat/unit testsite if you add extra plugins
+
+
+## Authors
+* Luuk Verhoeven :: [Ldesign Media](https://ldesignmedia.nl/) - [luuk@ldesignmedia.nl](luuk@ldesignmedia.nl)
+
+<img src="https://ldesignmedia.nl/themes/ldesignmedia/assets/images/logo/logo.svg" alt="ldesignmedia" height="70px">
