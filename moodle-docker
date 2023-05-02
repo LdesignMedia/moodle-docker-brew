@@ -1,0 +1,167 @@
+#!/usr/bin/env bash
+# Author: Luuk Verhoeven
+# Date: 01.05.2023, 06:20
+# Description:
+# Simple starter for Moodle docker containers.
+# Uses https://github.com/moodlehq/moodle-docker
+# Tested on MacOS with https://orbstack.dev/download
+#
+#
+#                               `.:;+o***ooi;.`
+#                                `,;o*%%&##########&*:`
+#                              '+&%%%***%%%%&$$$$$$$##&i`
+#                            `+$$%********%&$$$$$$$$$$$#&,
+#                           ,&&%*********&$$$$$$$$$$$$$$$$:
+#                          ,#$%********&$$$$$$$$$$$$$$$$$$o:
+#                         .$$$$&*****%%$$$########$$$$$$$$*i:
+#                         %$$##$&%**%$%.'..,::;i+*$$$$$$$$*i+.
+#                        '$#&o;,&$&&$$$+;ooi;:;i*%&$$$$$$$*iii
+#                        .$+::,;$$$$$$$$#$*%;`',,+#$$$$$$$oiii`
+#                        .oo&%&$$$$$$$$$$%*%,'.$&:.$$$$$$$+iii`
+#                        .#*+:`+$$$$$$$$$@%.,,+@@@i&$$$$$&iiii'
+#                        ,*.*,`+#$$$$$$$$#@#&$@@@##$$$$$$%iii;
+#                        ,,*%;+##$$$$$$$$$$$$$$$$$$$$$$$$oiioo,
+#                        .$&@@##$$$$##$$$$$$$$$$$$$$$$$$$i+%*o%;
+#                        .$$&&&$%$$&**$$$$$$$$$$$$$$$$$$%i+i;;;+.
+#                        .$$$$$$oiii;o$$$$$$$$$$$$$$$$$$oii;i;ii,
+#                        .$$$$$$$%%%$#$$$$$$$$$$$$$$$$$&iii;ii;+,
+#                        '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*iiiii;ii`
+#                        '$$$$$$$$$$$$$$&&&&$$$$$$$$$$&iii;;ii:'
+#                         &$$$$$&&&&&$&&&$$$$$$$$$$$$#*i++ii,`
+#                         o#$$$$&&$$&&$$$$$$$$$$$$$$#%+;'..`
+#                         .#$$$$$$%o+%$$$$$$$$$$$$$$%+i`
+#                          ;#$$$$$$$$$$$$$$$$$$$$$$*ii`
+#                           :$#$$$$$$$$$$$$$$$$$&*+;i;
+#                            'o#$$$$$$$$$$$$$&%oi;;;i;....'
+#                              ,&#$$$$$$$$%o+i;;;iii+;...,::
+#                               `;%###$%oi;;;iiiiiiii;,:;;ii`
+#                                `.;ii;;;;;;i;i;;;;;;iiiiiii`
+#                              `.....',+ii+*%*iiiiiiiiiiiii;
+#                             ;**%%,..;$*i%$$$%;iiiiiiiiiii;
+#                             ;#$$$+..i##%&$$&$*;iiiiiiiiii;
+#                             `&$&$*.';%**$$$$$$o;iiiiiiiiii'
+#                              +$&$&,,ioi%$$$$$$$o;iiiiiiiii: `
+#                              o$&$$+oooo$$$$$$$$$+;iiiiii;;:.''
+#                             '%$&$$*+o+*$$$$$$$$$$o;;;:;;:,.'.,,'
+#                           `,i*&$$$%+o+&$$$$$$&&%%*oo++;:,''.:;;;;,.
+#                         `'::*%o%$$&++o$$$$&%******%%o+:::io*ooo**%%o;.`
+#                       ';*i:;%*%**&$o+&$&%****%%%%%oi::;+*%%%%%%%%**%%%*+:
+#                     ,+%%%;:i%*%%****o%*****%%%%%*i::;+*%%******%%%%***%%%+`
+#                   :*%%***;:;*%%*%%*******%%*%%*i;,;+*%%*%%%%%%%%%%%%%%***%i
+#                 `o%%****%;::*%*%%o*%%%%*o+o**i;:;i*%%*%%%%%%%%%%%%%%%%%%**%.
+#                 +%**%%%%%i::o%%oio%**%%%%*i:;,;;*%%**%%%%%%%%%%%%%%%%%%%*%*;'
+#
+
+# Examples:
+# moodle-docker start 4.1
+# moodle-docker start 4.1
+# moodle-docker start 3.11
+# moodle-docker start 3.9
+# moodle-docker update
+# moodle-docker stop 4.1
+# moodle-docker destroy 4.1
+
+# VARS.
+version="0.0.1"
+moodle_list=$(cat moodle_versions.txt)
+selected_version=""
+
+source "scripts/helper.sh"
+log "${GREEN}Moodle docker brew v$version by Ldesign Media"
+log "${YELLOW}You can read the full documentation here: https://github.com/LdesignMedia/moodle-docker-brew"
+
+# Validate we can run the script.
+setup
+
+action="$1"
+
+# Remove the first argument
+shift
+
+# Get all remaining arguments in a single variable
+all_remaining_args="$@"
+
+# Validate the first argument
+case "$action" in
+start | update | stop | destroy) ;;
+*)
+  abort "Error: Invalid first argument. Allowed values are: start, update, stop, destroy."
+  ;;
+esac
+
+log "You provided the following arguments:"
+log "Argument 1: $action"
+log "Argument remaining: $all_remaining_args"
+
+# START COMMAND
+if [ "$action" == "start" ]; then
+  log "Available Moodle versions:"
+  echo "$moodle_list" | awk -F'|' '{ print $1 }'
+
+  # Prompt the user to select a Moodle version
+  while true; do
+    read -p "Please enter a Moodle version from the list above: " selected_version
+
+    # Get the corresponding download URL
+    download_url=$(echo "$moodle_list" | grep "^$selected_version|" | awk -F'|' '{ print $2 }')
+
+    if [ -z "$download_url" ]; then
+      abort "Invalid selection. Please try again."
+    else
+      break
+    fi
+  done
+
+  log "Selected Moodle version: $selected_version"
+  log "Download URL: $download_url"
+
+  # Download the zip file to the moodle directory and name it using the selected_version
+  zip_file="moodle/${selected_version}.zip"
+
+  if [ ! -f "$zip_file" ]; then
+
+    if command -v wget >/dev/null 2>&1; then
+      wget -O "$zip_file" "$download_url"
+    elif command -v curl >/dev/null 2>&1; then
+      curl -o "$zip_file" -L "$download_url"
+    else
+      abort "Error: wget or curl is required to download the Moodle version."
+    fi
+
+    log "Moodle version $selected_version downloaded to: $zip_file"
+  else
+    log "Already downloaded to: $zip_file"
+  fi
+
+  # Unzipping Moodle.
+  if [ ! -f "$zip_file" ]; then
+    abort "Failed to download  $download_url"
+  fi
+
+  if [ ! -d "moodle/${selected_version}" ]; then
+    unzip -q "$zip_file" -d "moodle/${selected_version}"
+    log "${GREEN}Moodle directory available at ${PWD}moodle/${selected_version}"
+  else
+    log "${GREEN}Moodle directory available at ${PWD}/moodle/${selected_version}"
+  fi
+
+  # Port mapping
+  export COMPOSE_PROJECT_NAME=moodle4010
+  export MOODLE_DOCKER_DB=mariadb
+  export MOODLE_DOCKER_DB_PORT=34010
+  export MOODLE_DOCKER_SELENIUM_VNC_PORT=594010
+  export MOODLE_DOCKER_WEB_PORT=84010
+
+fi
+
+# Check if Docker is available.
+
+# Check if we are using Orbstack.
+
+# Check if we are using MacOS.
+
+# Check if we have a docker running
+
+# Ask which Moodle version to start.
+
+git submodule update --init --recursive
