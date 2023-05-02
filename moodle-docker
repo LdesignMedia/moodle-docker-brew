@@ -64,20 +64,20 @@
 # moodle-docker behat 41 addtional
 
 # VARS.
-version="0.0.1"
-moodle_list=$(cat moodle_versions.txt)
-versions=$(echo "$moodle_list" | awk -F'|' '{ print $1 }')
-selected_version=""
-version_found=0
-action="$1"
-selected_version="$2"
+PLUGIN_VERSION="0.0.1"
+MOODLE_LIST=$(cat moodle_VERSIONS.txt)
+VERSIONS=$(echo "$MOODLE_LIST" | awk -F'|' '{ print $1 }')
+ARG2_SELECTED_VERSION=""
+VERSION_FOUND=0
+ARG1_ACTION="$1"
+ARG2_SELECTED_VERSION="$2"
 # ----------------------------------------------------------------
 
 source "scripts/helper.sh"
-log "${GREEN}Moodle docker brew v$version by Ldesign Media"
+log "${GREEN}Moodle docker brew v$PLUGIN_VERSION by Ldesign Media"
 log "${YELLOW}You can read the full documentation here: https://github.com/LdesignMedia/moodle-docker-brew"
 
-if [ "$action" == "help" ]; then
+if [ "$ARG1_ACTION" == "help" ]; then
   log "Usage: $0 command moodleversion [arg3 arg4 ...]"
   log "command: start | update | stop | destroy | info | behat | phpunit | upgrade"
   log "moodleversion: 42,41,40,311,310,39"
@@ -86,7 +86,7 @@ if [ "$action" == "help" ]; then
   abort "-"
 fi
 
-if [ "$action" == "upgrade" ]; then
+if [ "$ARG1_ACTION" == "upgrade" ]; then
   log "${GREEN}Moodle upgrade brew package"
   log "TODO"
   abort "-"
@@ -101,19 +101,19 @@ if [ "$#" -lt 2 ]; then
 fi
 
 # Check if the provided version is in the list
-for version in $versions; do
-  if [ "$version" == "$selected_version" ]; then
-    version_found=1
+for version in $VERSIONS; do
+  if [ "$version" == "$ARG2_SELECTED_VERSION" ]; then
+    VERSION_FOUND=1
     break
   fi
 done
 
-if [ ! $version_found -eq 1 ]; then
-  abort "The provided version $selected_version is not in the Moodle version list."
+if [ ! $VERSION_FOUND -eq 1 ]; then
+  abort "The provided version $ARG2_SELECTED_VERSION is not in the Moodle version list."
 fi
 
 # Get the corresponding download URL
-download_url=$(echo "$moodle_list" | grep "^$selected_version|" | awk -F'|' '{ print $2 }')
+download_url=$(echo "$MOODLE_LIST" | grep "^$ARG2_SELECTED_VERSION|" | awk -F'|' '{ print $2 }')
 
 if [ -z "$download_url" ]; then
   abort "Invalid selection. Please try again."
@@ -122,10 +122,10 @@ fi
 # Remove the first argument
 shift
 shift
-all_remaining_args="$@"
+ALL_REMAINING_ARGS="$@"
 
 # Validate the first argument
-case "$action" in
+case "$ARG1_ACTION" in
 start | update | stop | destroy | info | behat | phpunit) ;;
 *)
   abort "Error: Invalid first argument. Allowed values are: start, update, stop, destroy."
@@ -133,18 +133,18 @@ start | update | stop | destroy | info | behat | phpunit) ;;
 esac
 
 # LOGGING ----------------------------------------------------------------
-log "Argument remaining: $all_remaining_args"
-log "${GREEN}Selected Moodle version: $selected_version"
+log "Argument remaining: $ALL_REMAINING_ARGS"
+log "${GREEN}Selected Moodle version: $ARG2_SELECTED_VERSION"
 git submodule update --init --recursive
 # ----------------------------------------------------------------
 
 # EXPORTS ----------------------------------------------------------------
-export COMPOSE_PROJECT_NAME="moodle${selected_version}"
+export COMPOSE_PROJECT_NAME="moodle${ARG2_SELECTED_VERSION}"
 export MOODLE_DOCKER_DB=mariadb
-export MOODLE_DOCKER_DB_PORT="330${selected_version}"
-export MOODLE_DOCKER_SELENIUM_VNC_PORT="590${selected_version}"
-export MOODLE_DOCKER_WEB_PORT="80${selected_version}"
-export MOODLE_DOCKER_WWWROOT="${PWD}/moodle/${selected_version}"
+export MOODLE_DOCKER_DB_PORT="330${ARG2_SELECTED_VERSION}"
+export MOODLE_DOCKER_SELENIUM_VNC_PORT="590${ARG2_SELECTED_VERSION}"
+export MOODLE_DOCKER_WEB_PORT="80${ARG2_SELECTED_VERSION}"
+export MOODLE_DOCKER_WWWROOT="${PWD}/moodle/${ARG2_SELECTED_VERSION}"
 
 log "${YELLOW}DB port: $MOODLE_DOCKER_DB_PORT"
 log "${YELLOW}VNC port: $MOODLE_DOCKER_SELENIUM_VNC_PORT"
@@ -155,10 +155,10 @@ log "${YELLOW}When running Available on: http://localhost:$MOODLE_DOCKER_WEB_POR
 
 # START COMMAND
 # ----------------------------------------------------------------
-if [ "$action" == "start" ]; then
+if [ "$ARG1_ACTION" == "start" ]; then
 
   # Download the zip file to the moodle directory and name it using the selected_version
-  zip_file="moodle/${selected_version}.zip"
+  zip_file="moodle/${ARG2_SELECTED_VERSION}.zip"
 
   if [ ! -f "$zip_file" ]; then
 
@@ -170,7 +170,7 @@ if [ "$action" == "start" ]; then
       abort "Error: wget or curl is required to download the Moodle version."
     fi
 
-    log "Moodle version $selected_version downloaded to: $zip_file"
+    log "Moodle version $ARG2_SELECTED_VERSION downloaded to: $zip_file"
   else
     log "Already downloaded to: $zip_file"
   fi
@@ -180,14 +180,14 @@ if [ "$action" == "start" ]; then
     abort "Failed to download  $download_url"
   fi
 
-  if [ ! -d "moodle/${selected_version}" ]; then
+  if [ ! -d "moodle/${ARG2_SELECTED_VERSION}" ]; then
     rm -rf "moodle/moodle"
     unzip -q "$zip_file" -d "moodle/"
-    mv "moodle/moodle" "moodle/${selected_version}"
+    mv "moodle/moodle" "moodle/${ARG2_SELECTED_VERSION}"
 
-    log "${GREEN}Moodle directory available at ${PWD}/moodle/${selected_version}"
+    log "${GREEN}Moodle directory available at ${PWD}/moodle/${ARG2_SELECTED_VERSION}"
   else
-    log "${GREEN}Moodle directory available at ${PWD}/moodle/${selected_version}"
+    log "${GREEN}Moodle directory available at ${PWD}/moodle/${ARG2_SELECTED_VERSION}"
   fi
 
   log "$COMPOSE_PROJECT_NAME"
@@ -231,7 +231,7 @@ if [ "$action" == "start" ]; then
 
 # DESTROY COMMAND
 # ----------------------------------------------------------------
-elif [ "$action" == "destroy" ]; then
+elif [ "$ARG1_ACTION" == "destroy" ]; then
   log "${MAGENTA}Destroying Moodle installation and docker containers."
 
   if confirm "Do you want to proceed?"; then
@@ -242,13 +242,13 @@ elif [ "$action" == "destroy" ]; then
     bin/moodle-docker-compose down
 
     rm -rf "$MOODLE_DOCKER_WWWROOT"
-    rm "../moodle/$selected_version.zip" >/dev/null
+    rm "../moodle/$ARG2_SELECTED_VERSION.zip" >/dev/null
 
   fi
 
 # STOP COMMAND
 # ----------------------------------------------------------------
-elif [ "$action" == "stop" ]; then
+elif [ "$ARG1_ACTION" == "stop" ]; then
 
   log "${GREEN}stopping docker containers."
   cd "moodlehq-docker" || abort "moodlehq-docker is missing"
@@ -259,32 +259,32 @@ elif [ "$action" == "stop" ]; then
 
 # BEHAT COMMAND
 # ----------------------------------------------------------------
-elif [ "$action" == "behat" ]; then
-  log "${GREEN}bin/moodle-docker-compose exec -u www-data webserver php admin/tool/behat/cli/run.php $all_remaining_args"
+elif [ "$ARG1_ACTION" == "behat" ]; then
+  log "${GREEN}bin/moodle-docker-compose exec -u www-data webserver php admin/tool/behat/cli/run.php $ALL_REMAINING_ARGS"
 
   cd "moodlehq-docker" || abort "moodlehq-docker is missing"
   check_is_running
 
-  bin/moodle-docker-compose up -d
-  bin/moodle-docker-wait-for-db
-  bin/moodle-docker-compose exec -u www-data webserver php admin/tool/behat/cli/run.php "$all_remaining_args"
+  bin/moodle-docker-compose exec -u www-data webserver php admin/tool/behat/cli/run.php "$ALL_REMAINING_ARGS"
 
 # PHPUNIT COMMAND
 # ----------------------------------------------------------------
-elif [ "$action" == "phpunit" ]; then
-  log "${GREEN}bin/moodle-docker-compose exec webserver vendor/bin/phpunit $all_remaining_args"
+elif [ "$ARG1_ACTION" == "phpunit" ]; then
+  log "${GREEN}bin/moodle-docker-compose exec webserver vendor/bin/phpunit $ALL_REMAINING_ARGS"
 
   cd "moodlehq-docker" || abort "moodlehq-docker is missing"
   check_is_running
 
-  bin/moodle-docker-compose exec webserver vendor/bin/phpunit "$all_remaining_args"
+  bin/moodle-docker-compose exec webserver vendor/bin/phpunit "$ALL_REMAINING_ARGS"
 
 # UPDATE COMMAND
 # ----------------------------------------------------------------
-elif [ "$action" == "update" ]; then
+elif [ "$ARG1_ACTION" == "update" ]; then
 
   log "${GREEN}Updating container"
   cd "moodlehq-docker" || abort "moodlehq-docker is missing"
   check_is_running
 
+else
+  log "Unknown command $ARG1_ACTION"
 fi
