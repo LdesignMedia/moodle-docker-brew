@@ -11,7 +11,6 @@ This brew script simplifies the process of running the Moodle Docker, which can 
 - Supports Moodle versions 42, 41, 40, 311, 310, and 39.
 - Assigns unique ports for each Moodle test suite.
 
-
 ```bash
 # Examples:
 # moodle-docker help
@@ -29,13 +28,22 @@ This brew script simplifies the process of running the Moodle Docker, which can 
 
 ## TODO 
 
-- [ ] Make it installable from brew (https://betterprogramming.pub/a-step-by-step-guide-to-create-homebrew-taps-from-github-repos-f33d3755ba74)
+- [ ] Make it installable from brew (check if git package can be private) (https://betterprogramming.pub/a-step-by-step-guide-to-create-homebrew-taps-from-github-repos-f33d3755ba74)
 - [ ] Xdebug option  
 - [ ] Install developer/commander tools
-- [ ] Install directlogin
+- [ ] Install `directlogin.php`
 - [ ] Reinstall behat/unit testsite if you add extra plugins
-
-
+- [ ] Mailhog test
+- [ ] VNC test
+- [ ] Screenshot on behat failure http://localhost:8042/_/faildumps/ in the informational message
+- [ ] Connect PHPstorm test building a plugin
+- [ ] xdebug configuration see Using XDebug for live debugging
+- [ ] show mail link http://localhost:8000/_/mail with correct port in the informational message
+- [ ] test connecting navicat, add to readme how to
+- [ ] command for stopping all 
+- [ ] command to see all running Moodle versions
+- [ ] install with a specific version of PHP
+ 
 ## Authors
 * Luuk Verhoeven :: [Ldesign Media](https://ldesignmedia.nl/) - [luuk@ldesignmedia.nl](luuk@ldesignmedia.nl)
 
