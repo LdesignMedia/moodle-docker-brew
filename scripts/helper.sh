@@ -66,6 +66,24 @@ function abort() {
   exit 1
 }
 
+# Function to ask for confirmation
+confirm() {
+    while true; do
+        read -r -p "${1:-Are you sure?} [y/N] " response
+        case $response in
+            [yY][eE][sS]|[yY])
+                return 0
+                ;;
+            [nN][oO]|[nN])
+                return 1
+                ;;
+            *)
+                echo "Please answer 'yes' or 'no'."
+                ;;
+        esac
+    done
+}
+
 function setup() {
   log "Initializing..."
 
