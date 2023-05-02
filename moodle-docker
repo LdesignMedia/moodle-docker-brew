@@ -80,7 +80,7 @@ log "${YELLOW}You can read the full documentation here: https://github.com/Ldesi
 if [ "$ARG1_ACTION" == "help" ]; then
   log "Usage: $0 command moodleversion [arg3 arg4 ...]"
   log "command: start | update | stop | destroy | info | behat | phpunit | upgrade"
-  log "moodleversion: 42,41,40,311,310,39"
+  log "Example of moodleversion: 42,41,40,311,310,39"
   log "More arguments are optional for phpunit or behat"
 
   abort "-"
@@ -146,6 +146,15 @@ export MOODLE_DOCKER_SELENIUM_VNC_PORT="590${ARG2_SELECTED_VERSION}"
 export MOODLE_DOCKER_WEB_PORT="80${ARG2_SELECTED_VERSION}"
 export MOODLE_DOCKER_WWWROOT="${PWD}/moodle/${ARG2_SELECTED_VERSION}"
 
+# Set PHP for older versions
+if [ "$ARG2_SELECTED_VERSION" == "39" ]; then
+  export MOODLE_DOCKER_PHP_VERSION=7.4
+  log "Running with the PHP version: 7.4 (See: https://docs.moodle.org/402/en/PHP)"
+else
+  log "Running with the PHP version: 8.0"
+  export MOODLE_DOCKER_PHP_VERSION=8.0
+fi
+
 log "${YELLOW}DB port: $MOODLE_DOCKER_DB_PORT"
 log "${YELLOW}VNC port: $MOODLE_DOCKER_SELENIUM_VNC_PORT"
 log "${YELLOW}Webserver port: $MOODLE_DOCKER_WEB_PORT"
@@ -200,13 +209,12 @@ if [ "$ARG1_ACTION" == "start" ]; then
     abort "Failed to install Moodle in ($MOODLE_DOCKER_WWWROOT)"
   fi
 
-  # TODO check if it's already running.
-  bin/moodle-docker-compose up -d
-
-  # Wait for DB to come up (important for oracle/mssql)
-  bin/moodle-docker-wait-for-db
-
   if [ ! -f "$MOODLE_DOCKER_WWWROOT/installed" ]; then
+
+    bin/moodle-docker-compose up -d
+
+    # Wait for DB to come up (important for oracle/mssql)
+    bin/moodle-docker-wait-for-db
 
     # Flag so we don't run this more than once.
     touch "$MOODLE_DOCKER_WWWROOT/installed"
@@ -225,6 +233,9 @@ if [ "$ARG1_ACTION" == "start" ]; then
     log "Installing Moodle phpunit"
 
     bin/moodle-docker-compose exec webserver php admin/tool/phpunit/cli/init.php
+  else
+    # Restart containers
+    bin/moodle-docker-compose start
   fi
 
   log "${YELLOW}Available on: http://localhost:$MOODLE_DOCKER_WEB_PORT/"
