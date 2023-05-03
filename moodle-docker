@@ -65,7 +65,7 @@
 
 # VARS.
 PLUGIN_VERSION="0.0.5"
-MOODLE_LIST=$(cat moodle_versions.txt)
+MOODLE_LIST=$(cat /opt/moodle-docker/moodle_versions.txt)
 VERSIONS=$(echo "$MOODLE_LIST" | awk -F'|' '{ print $1 }')
 ARG2_SELECTED_VERSION=""
 VERSION_FOUND=0
@@ -77,13 +77,13 @@ source "${HOMEBREW_PREFIX}/opt/moodle-docker/bin/scripts/helper.sh"
 log "${GREEN}Moodle docker brew v$PLUGIN_VERSION by Ldesign Media"
 log "${YELLOW}You can read the full documentation here: https://github.com/LdesignMedia/moodle-docker-brew"
 
-if [ "$ARG1_ACTION" == "help" ]; then
+if [ "$ARG1_ACTION" == "help" ] || [ "$ARG1_ACTION" == "-help" ]; then
   log "Usage: $0 command moodleversion [arg3 arg4 ...]"
   log "command: start | update | stop | destroy | info | behat | phpunit | upgrade"
   log "Example of moodleversion: 42,41,40,311,310,39"
   log "More arguments are optional for phpunit or behat"
 
-  abort "-"
+  abort
 fi
 
 if [ "$ARG1_ACTION" == "upgrade" ]; then
