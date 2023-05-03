@@ -11,6 +11,26 @@ This brew script simplifies the process of running the Moodle Docker, which can 
 - Supports Moodle versions 42, 41, 40, 311, 310, and 39.
 - Assigns unique ports for each Moodle test suite.
 
+## Installation
+
+- To be able to authenticate with github using your credentials:
+```bash
+brew tap microsoft/git
+brew install --cask git-credential-manager-core
+```
+- This will open a browser where you can allow access to GitHub. 
+
+- Create the homebrew tap:
+```bash
+  brew tap ldesignmedia/moodledocker
+```
+
+- Install the Moodle docker package
+```bash
+ brew install ldesignmedia/moodledocker/moodle-docker
+```
+
+## Examples
 
 ```bash
 # Examples:

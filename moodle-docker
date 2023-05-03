@@ -65,7 +65,7 @@
 
 # VARS.
 PLUGIN_VERSION="0.0.1"
-MOODLE_LIST=$(cat moodle_VERSIONS.txt)
+MOODLE_LIST=$(cat moodle_versions.txt)
 VERSIONS=$(echo "$MOODLE_LIST" | awk -F'|' '{ print $1 }')
 ARG2_SELECTED_VERSION=""
 VERSION_FOUND=0
