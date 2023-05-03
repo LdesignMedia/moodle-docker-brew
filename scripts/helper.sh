@@ -135,7 +135,7 @@ function setup() {
     abort "Orbstack is not installed, please install it first."
   fi
 
-  if [ ! -f "moodlehq-docker/config.docker-template.php" ]; then
+  if [ ! -f "${HOMEBREW_PREFIX}/opt/moodle-docker/bin/moodlehq-docker/config.docker-template.php" ]; then
     # Try to solve this issue.
     git submodule update --init --recursive
     abort "Git submodule is missing (moodlehq-docker)."

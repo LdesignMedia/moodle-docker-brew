@@ -64,7 +64,7 @@
 # moodle-docker behat 41 addtional
 
 # VARS.
-PLUGIN_VERSION="0.0.3"
+PLUGIN_VERSION="0.0.5"
 MOODLE_LIST=$(cat moodle_versions.txt)
 VERSIONS=$(echo "$MOODLE_LIST" | awk -F'|' '{ print $1 }')
 ARG2_SELECTED_VERSION=""
@@ -73,7 +73,7 @@ ARG1_ACTION="$1"
 ARG2_SELECTED_VERSION="$2"
 # ----------------------------------------------------------------
 
-source "/opt/homebrew/opt/moodle-docker/bin/scripts/helper.sh"
+source "${HOMEBREW_PREFIX}/opt/moodle-docker/bin/scripts/helper.sh"
 log "${GREEN}Moodle docker brew v$PLUGIN_VERSION by Ldesign Media"
 log "${YELLOW}You can read the full documentation here: https://github.com/LdesignMedia/moodle-docker-brew"
 
