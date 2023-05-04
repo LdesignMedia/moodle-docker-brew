@@ -167,7 +167,7 @@ log "${YELLOW}When running Available on: http://localhost:$MOODLE_DOCKER_WEB_POR
 if [ "$ARG1_ACTION" == "start" ]; then
 
   # Download the zip file to the moodle directory and name it using the selected_version
-  zip_file="moodle/${ARG2_SELECTED_VERSION}.zip"
+  zip_file="${HOMEBREW_PREFIX}/opt/bin/moodle/${ARG2_SELECTED_VERSION}.zip"
 
   if [ ! -f "$zip_file" ]; then
 
@@ -189,10 +189,10 @@ if [ "$ARG1_ACTION" == "start" ]; then
     abort "Failed to download  $download_url"
   fi
 
-  if [ ! -d "moodle/${ARG2_SELECTED_VERSION}" ]; then
-    rm -rf "moodle/moodle"
-    unzip -q "$zip_file" -d "moodle/"
-    mv "moodle/moodle" "moodle/${ARG2_SELECTED_VERSION}"
+  if [ ! -d "${HOMEBREW_PREFIX}/opt/bin/moodle/${ARG2_SELECTED_VERSION}" ]; then
+    rm -rf "${HOMEBREW_PREFIX}/opt/bin/moodle/moodle"
+    unzip -q "$zip_file" -d "${HOMEBREW_PREFIX}/opt/bin/moodle/"
+    mv "${HOMEBREW_PREFIX}/opt/bin/moodle/moodle" "${HOMEBREW_PREFIX}/opt/bin/moodle/${ARG2_SELECTED_VERSION}"
 
     log "${GREEN}Moodle directory available at ${PWD}/moodle/${ARG2_SELECTED_VERSION}"
   else
@@ -201,8 +201,8 @@ if [ "$ARG1_ACTION" == "start" ]; then
 
   log "$COMPOSE_PROJECT_NAME"
 
-  cp "moodlehq-docker/config.docker-template.php" "$MOODLE_DOCKER_WWWROOT/config.php"
-  cd "moodlehq-docker" || abort "moodlehq-docker is missing"
+  cp "${HOMEBREW_PREFIX}/opt/bin/moodlehq-docker/config.docker-template.php" "$MOODLE_DOCKER_WWWROOT/config.php"
+  cd "${HOMEBREW_PREFIX}/opt/bin/moodlehq-docker" || abort "moodlehq-docker is missing"
 
   # Make sure Moodle is installed.
   if [ ! -f "$MOODLE_DOCKER_WWWROOT/version.php" ]; then
