@@ -203,8 +203,8 @@ if [ "$ARG1_ACTION" == "start" ]; then
 
   log "$COMPOSE_PROJECT_NAME"
 
-  cp "${HOMEBREW_PREFIX}/opt/moodle-docker/bin/moodlehq-docker/config.docker-template.php" "$MOODLE_DOCKER_WWWROOT/config.php"
-  cd "${HOMEBREW_PREFIX}/opt/moodle-docker/bin/moodlehq-docker" || abort "moodlehq-docker is missing"
+  cp "$HOMEBREW_OPT_BIN/moodlehq-docker/config.docker-template.php" "$MOODLE_DOCKER_WWWROOT/config.php"
+  cd "$HOMEBREW_OPT_BIN/moodlehq-docker" || abort "moodlehq-docker is missing"
 
   # Make sure Moodle is installed.
   if [ ! -f "$MOODLE_DOCKER_WWWROOT/version.php" ]; then
