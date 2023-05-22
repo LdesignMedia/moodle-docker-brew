@@ -10,6 +10,15 @@ This brew script simplifies the process of running the Moodle Docker, which can 
 - Stores all files within this directory.
 - Supports Moodle versions 42, 41, 40, 311, 310, and 39.
 - Assigns unique ports for each Moodle test suite.
+- Can be installed via Homebrew.
+
+## Installation with homebrew
+
+How to: https://github.com/LdesignMedia/homebrew-moodle-docker
+
+This repository is located at `~/.moodle-docker-brew` after the homebrew installation. 
+
+## Usage
 
 ```bash
 # Examples:
@@ -28,7 +37,6 @@ This brew script simplifies the process of running the Moodle Docker, which can 
 
 ## TODO 
 
-- [ ] Make it installable from brew (check if git package can be private) (https://betterprogramming.pub/a-step-by-step-guide-to-create-homebrew-taps-from-github-repos-f33d3755ba74)
 - [ ] Xdebug option  
 - [ ] Install developer/commander tools
 - [ ] Install `directlogin.php`
