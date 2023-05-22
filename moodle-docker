@@ -64,18 +64,26 @@
 # moodle-docker behat 41 addtional
 
 # VARS.
-PLUGIN_VERSION="0.0.1"
-MOODLE_LIST=$(cat moodle_VERSIONS.txt)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# TODO compare against   brew list --versions moodle-docker
+PLUGIN_VERSION="1.0.10"
+MOODLE_LIST=$(cat $SCRIPT_DIR/moodle_VERSIONS.txt)
 VERSIONS=$(echo "$MOODLE_LIST" | awk -F'|' '{ print $1 }')
 ARG2_SELECTED_VERSION=""
 VERSION_FOUND=0
 ARG1_ACTION="$1"
 ARG2_SELECTED_VERSION="$2"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # ----------------------------------------------------------------
 
 source "$SCRIPT_DIR/scripts/helper.sh"
-log "${GREEN}Moodle docker brew v$PLUGIN_VERSION by Ldesign Media"
+
+# Below is the alias (moodle-docker) to https://github.com/LdesignMedia/homebrew-moodle-docker/blob/main/install_moodle_docker.sh this is used for
+# installing and workarround home directory issues.
+log "Brew runner version:"
+brew list --versions moodle-docker
+
+log "${GREEN}Moodle docker $PLUGIN_VERSION by Ldesign Media"
 log "${YELLOW}You can read the full documentation here: https://github.com/LdesignMedia/moodle-docker-brew"
 
 if [ "$ARG1_ACTION" == "help" ]; then
