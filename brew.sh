@@ -1,10 +1,12 @@
 #!/bin/bash
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-if [ ! -d ~/.moodle-docker-brew ]; then
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HOME_DIR=$(dscl . -read /Users/$(whoami) NFSHomeDirectory | awk '{print $NF}')
+
+if [ ! -d "$HOME_DIR/.moodle-docker-brew ]; then
 
 echo "Installing (moodle-docker-brew)"
-DESTDIR="~/.moodle-docker-brew"
+DESTDIR="$HOME_DIR/.moodle-docker-brew"
 
 echo "Installing to: $DESTDIR"
 
@@ -43,5 +45,5 @@ fi
 echo "Finished installing dependencies"
 
 else 
-  bash ~/.moodle-docker-brew/moodle-docker "$@"
+  bash $HOME_DIR/.moodle-docker-brew/moodle-docker "$@"
 fi
