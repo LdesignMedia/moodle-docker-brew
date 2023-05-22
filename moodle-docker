@@ -71,9 +71,10 @@ ARG2_SELECTED_VERSION=""
 VERSION_FOUND=0
 ARG1_ACTION="$1"
 ARG2_SELECTED_VERSION="$2"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # ----------------------------------------------------------------
 
-source "scripts/helper.sh"
+source "$SCRIPT_DIR/scripts/helper.sh"
 log "${GREEN}Moodle docker brew v$PLUGIN_VERSION by Ldesign Media"
 log "${YELLOW}You can read the full documentation here: https://github.com/LdesignMedia/moodle-docker-brew"
 
