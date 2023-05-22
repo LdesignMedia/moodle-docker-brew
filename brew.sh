@@ -1,3 +1,3 @@
 #!/bin/bash
-
-bash "./moodle-docker-brew/moodle-docker" "$@"
+echo "The current working directory is: $(pwd)"
+bash "$(pwd)/moodle-docker-brew/moodle-docker" "$@"
