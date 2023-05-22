@@ -54,6 +54,7 @@ export YELLOW=$(tput setaf 3)
 export MAGENTA=$(tput setaf 5)
 export RESET=$(tput sgr0)
 export CURRENTDATE=$(date +%Y-%m-%d-%H-%M-%S)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Logging with colors and time.
 function log {
@@ -135,7 +136,9 @@ function setup() {
     abort "Orbstack is not installed, please install it first."
   fi
 
-  if [ ! -f "moodlehq-docker/config.docker-template.php" ]; then
+  if [ ! -f "$SCRIPT_DIR/../moodlehq-docker/config.docker-template.php" ]; then
+    cd $SCRIPT_DIR/../
+
     # Try to solve this issue.
     git submodule update --init --recursive
     abort "Git submodule is missing (moodlehq-docker)."
