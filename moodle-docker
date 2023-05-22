@@ -306,6 +306,9 @@ elif [ "$ARG1_ACTION" == "update" ]; then
   cd "moodlehq-docker" || abort "moodlehq-docker is missing"
   check_is_running
 
+  #TODO reinstall behat/unit testing after you add a plugin.
+
+
 else
   log "Unknown command $ARG1_ACTION"
 fi
