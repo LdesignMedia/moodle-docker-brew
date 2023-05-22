@@ -1,3 +1,4 @@
 #!/bin/bash
-echo "The current working directory is: $(pwd)"
-bash "$(pwd)/moodle-docker-brew/moodle-docker" "$@"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+bash "$SCRIPT_DIR/moodle-docker-brew/moodle-docker" "$@"
