@@ -24,38 +24,57 @@ This repository is located at `~/.moodle-docker-brew` after the homebrew install
 
 ```bash
 # Examples:
-# moodle-docker help
-# moodle-docker upgrade     (Install latest version of moodle-docker)
-# moodle-docker start 42    (Install/start a Moodle 42 instance)
-# moodle-docker start 41    (Install/start a Moodle 41 instance)
-# moodle-docker start 311   (Install/start a Moodle 311 instance)
-# moodle-docker start 39    (Install/start a Moodle 39 instance)
-# moodle-docker update 41   (reload behat/unit testing installation)
-# moodle-docker stop 41     (Stop a Moodle 41 instance, can be restarted with the start command)
-# moodle-docker destroy 41  (Remove a Moodle 41 instance, all data/docker containers will be removed)
+moodle-docker help
+moodle-docker upgrade     # (Install latest version of moodle-docker)
 
+moodle-docker start 39    # (Install/start a Moodle 39 instance)
+moodle-docker start 311   # (Install/start a Moodle 311 instance)
+moodle-docker start 41    # (Install/start a Moodle 41 instance)
+moodle-docker start 42    # (Install/start a Moodle 42 instance)
+
+moodle-docker stop 39     # (Stop a Moodle 41 instance, can be restarted with the start command)
+moodle-docker stop 311    # (Stop a Moodle 41 instance, can be restarted with the start command)
+moodle-docker stop 41     # (Stop a Moodle 41 instance, can be restarted with the start command)
+moodle-docker stop 42     # (Stop a Moodle 41 instance, can be restarted with the start command)
+
+moodle-docker destroy 39  # (Remove a Moodle 41 instance, all data/docker containers will be removed)
+moodle-docker destroy 311 # (Remove a Moodle 41 instance, all data/docker containers will be removed)
+moodle-docker destroy 41  # (Remove a Moodle 41 instance, all data/docker containers will be removed)
+moodle-docker destroy 42  # (Remove a Moodle 41 instance, all data/docker containers will be removed)
+
+moodle-docker update 42  # (Reload PHPunit and Behat testsite)
+```
+
+## Behat and phpunit
+
+```bash
 # Testing examples
-# moodle-docker behat 41 --tags=@auth_manual (Run a behat command on a running Moodle 41 instance)
-# moodle-docker phpunit 39 auth/manual/tests/manual_test.php  (Run a phpunit command on a running Moodle 39 instance)
+moodle-docker phpunit 41 auth/manual/tests/manual_test.php
+moodle-docker behat 41 --tags=@auth_manual # (Run a behat command on a running Moodle 41 instance)
+
+moodle-docker phpunit 39 auth/manual/tests/manual_test.php  # (Run a phpunit command on a running Moodle 39 instance)
+moodle-docker behat 39 --tags=@auth_manual
+```
+## Behat VNC
+
+```bash
+# Download a VNC client: https://www.realvnc.com/en/connect/download/viewer/
+# Host: localhost/0.0.0.0
+# Port: 59000 + Moodle version number (59000 + 42 = 59042)
+# Connect to the VNC server with the following credentials:
+# The password is 'secret'.
 ```
 
 ## TODO 
 
 - [ ] Install developer/commander tools
 - [ ] Install `directlogin.php`
-- [ ] Reinstall behat/unit testsite if you add extra plugins
-- [ ] Mailhog test
-- [ ] VNC test
-- [ ] Screenshot on behat failure http://localhost:8042/_/faildumps/ in the informational message
 - [ ] Connect PHPstorm test building a plugin
 - [ ] xdebug configuration see Using XDebug for live debugging
-- [ ] show mail link http://localhost:8000/_/mail with correct port in the informational message
 - [ ] test connecting navicat, add to readme how to
 - [ ] command for stopping all 
 - [ ] command to see all running Moodle versions
 - [ ] install with a specific version of PHP
-- [ ] test building a Behat test
-- [ ] test building a unit test
 - [ ] Xdebug option
  
 ## Authors
