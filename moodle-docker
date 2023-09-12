@@ -64,6 +64,7 @@
 # moodle-docker behat 41 addtional
 
 # VARS.
+ORIGINAL_DIR=$(pwd)
 SCRIPT_DIR_MOODLE_DOCKER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # TODO compare against brew list --versions moodle-docker start upgrade if its higher than current
@@ -98,9 +99,11 @@ if [ "$ARG1_ACTION" == "help" ]; then
 fi
 
 if [ "$ARG1_ACTION" == "upgrade" ]; then
+  cd "$SCRIPT_DIR_MOODLE_DOCKER" || abort "moodlehq-docker is missing"
   log "${GREEN}Moodle upgrade brew package"
   git status
   git pull
+  cd "$ORIGINAL_DIR"
   exit 0;
 fi
 
