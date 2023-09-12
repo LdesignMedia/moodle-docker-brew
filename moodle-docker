@@ -99,12 +99,18 @@ if [ "$ARG1_ACTION" == "help" ]; then
 fi
 
 if [ "$ARG1_ACTION" == "upgrade" ]; then
-  cd "$SCRIPT_DIR_MOODLE_DOCKER" || abort "moodlehq-docker is missing"
+  cd "$SCRIPT_DIR_MOODLE_DOCKER" || abort "~/.moodle-docker-brew is missing"
   log "${GREEN}Moodle upgrade brew package"
   git status
   git pull
+
+  cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "Submodule moodlehq-docker is missing"
+  git status
+  git pull
+
+  # Back to the original directory.
   cd "$ORIGINAL_DIR"
-  exit 0;
+  exit 0
 fi
 
 # Validate we can run the script.
@@ -312,7 +318,6 @@ elif [ "$ARG1_ACTION" == "update" ]; then
   check_is_running
 
   #TODO reinstall behat/unit testing after you add a plugin.
-
 
 else
   log "Unknown command $ARG1_ACTION"
