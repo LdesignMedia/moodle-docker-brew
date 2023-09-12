@@ -178,6 +178,9 @@ log "${YELLOW}VNC port: $MOODLE_DOCKER_SELENIUM_VNC_PORT"
 log "${YELLOW}Webserver port: $MOODLE_DOCKER_WEB_PORT"
 log "${YELLOW}Directory: $MOODLE_DOCKER_WWWROOT"
 log "${YELLOW}When running Available on: http://localhost:$MOODLE_DOCKER_WEB_PORT/"
+log "${YELLOW}Behat faildumps: http://localhost:$MOODLE_DOCKER_WEB_PORT/_/faildumps/"
+log "${YELLOW}Mail catcher: http://localhost:$MOODLE_DOCKER_WEB_PORT/_/mail/"
+
 # ----------------------------------------------------------------
 
 # START COMMAND
@@ -310,11 +313,17 @@ elif [ "$ARG1_ACTION" == "phpunit" ]; then
 # ----------------------------------------------------------------
 elif [ "$ARG1_ACTION" == "update" ]; then
 
-  log "${GREEN}Updating container"
+  log "${GREEN}Updating container behat + unit tests init again."
   cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
   check_is_running
 
-  #TODO reinstall behat/unit testing after you add a plugin.
+  # Initialize behat environment.
+  log "Installing Moodle behat"
+  bin/moodle-docker-compose exec webserver php admin/tool/behat/cli/init.php
+
+  # Initialize phpunit environment.
+  log "Installing Moodle phpunit"
+  bin/moodle-docker-compose exec webserver php admin/tool/phpunit/cli/init.php
 
 else
   log "Unknown command $ARG1_ACTION"
