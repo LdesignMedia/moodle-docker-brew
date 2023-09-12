@@ -1,6 +1,6 @@
-42|https://download.moodle.org/download.php/direct/stable402/moodle-latest-402.zip
-41|https://download.moodle.org/download.php/direct/stable401/moodle-latest-401.zip
-40|https://download.moodle.org/download.php/direct/stable400/moodle-latest-400.zip
-311|https://download.moodle.org/download.php/direct/stable311/moodle-latest-311.zip
-310|https://download.moodle.org/download.php/direct/stable310/moodle-latest-310.zip
-39|https://download.moodle.org/download.php/direct/stable39/moodle-latest-39.zip
+42|https://packaging.moodle.org/stable402/moodle-latest-402.zip
+41|https://packaging.moodle.org/stable401/moodle-latest-401.zip
+40|https://packaging.moodle.org/stable400/moodle-latest-400.zip
+311|https://packaging.moodle.org/stable311/moodle-latest-311.zip
+310|https://packaging.moodle.org/stable310/moodle-latest-310.zip
+39|https://packaging.moodle.org/stable39/moodle-latest-39.zip
