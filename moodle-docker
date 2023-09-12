@@ -154,7 +154,6 @@ esac
 # LOGGING ----------------------------------------------------------------
 log "Argument remaining: $ALL_REMAINING_ARGS"
 log "${GREEN}Selected Moodle version: $ARG2_SELECTED_VERSION"
-git submodule update --init --recursive
 # ----------------------------------------------------------------
 
 # EXPORTS ----------------------------------------------------------------
