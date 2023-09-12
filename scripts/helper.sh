@@ -137,9 +137,13 @@ function setup() {
   fi
 
   if [ ! -f "$SCRIPT_DIR/../moodlehq-docker/config.docker-template.php" ]; then
+    echo "Missing submodule, trying to fix it."
+
+    echo "$SCRIPT_DIR/../"
     cd $SCRIPT_DIR/../
 
     # Try to solve this issue.
+    echo "submodule update --init --recursive"
     git submodule update --init --recursive
     abort "Git submodule is missing (moodlehq-docker)."
   fi
