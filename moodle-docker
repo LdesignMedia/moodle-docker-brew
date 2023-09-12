@@ -186,7 +186,7 @@ log "${YELLOW}When running Available on: http://localhost:$MOODLE_DOCKER_WEB_POR
 if [ "$ARG1_ACTION" == "start" ]; then
 
   # Download the zip file to the moodle directory and name it using the selected_version
-  zip_file="moodle/${ARG2_SELECTED_VERSION}.zip"
+  zip_file="$SCRIPT_DIR_MOODLE_DOCKER/moodle/${ARG2_SELECTED_VERSION}.zip"
 
   if [ ! -f "$zip_file" ]; then
 
@@ -208,20 +208,20 @@ if [ "$ARG1_ACTION" == "start" ]; then
     abort "Failed to download  $download_url"
   fi
 
-  if [ ! -d "moodle/${ARG2_SELECTED_VERSION}" ]; then
-    rm -rf "moodle/moodle"
-    unzip -q "$zip_file" -d "moodle/"
-    mv "moodle/moodle" "moodle/${ARG2_SELECTED_VERSION}"
+  if [ ! -d "$SCRIPT_DIR_MOODLE_DOCKER/moodle/${ARG2_SELECTED_VERSION}" ]; then
+    rm -rf "$SCRIPT_DIR_MOODLE_DOCKER/moodle/moodle"
+    unzip -q "$zip_file" -d "$SCRIPT_DIR_MOODLE_DOCKER/moodle/"
+    mv "$SCRIPT_DIR_MOODLE_DOCKER/moodle/moodle" "$SCRIPT_DIR_MOODLE_DOCKER/moodle/${ARG2_SELECTED_VERSION}"
 
-    log "${GREEN}Moodle directory available at ${PWD}/moodle/${ARG2_SELECTED_VERSION}"
+    log "${GREEN}Moodle directory available at ${SCRIPT_DIR_MOODLE_DOCKER}/moodle/${ARG2_SELECTED_VERSION}"
   else
-    log "${GREEN}Moodle directory available at ${PWD}/moodle/${ARG2_SELECTED_VERSION}"
+    log "${GREEN}Moodle directory available at ${SCRIPT_DIR_MOODLE_DOCKER}/moodle/${ARG2_SELECTED_VERSION}"
   fi
 
   log "$COMPOSE_PROJECT_NAME"
 
-  cp "moodlehq-docker/config.docker-template.php" "$MOODLE_DOCKER_WWWROOT/config.php"
-  cd "moodlehq-docker" || abort "moodlehq-docker is missing"
+  cp "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker/config.docker-template.php" "$MOODLE_DOCKER_WWWROOT/config.php"
+  cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
 
   # Make sure Moodle is installed.
   if [ ! -f "$MOODLE_DOCKER_WWWROOT/version.php" ]; then
@@ -267,12 +267,12 @@ elif [ "$ARG1_ACTION" == "destroy" ]; then
   if confirm "Do you want to proceed?"; then
 
     # Shut down and destroy containers
-    cd "moodlehq-docker" || abort "moodlehq-docker is missing"
+    cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
 
     bin/moodle-docker-compose down
 
     rm -rf "$MOODLE_DOCKER_WWWROOT"
-    rm "../moodle/$ARG2_SELECTED_VERSION.zip" >/dev/null
+    rm "$SCRIPT_DIR_MOODLE_DOCKER/../moodle/$ARG2_SELECTED_VERSION.zip" >/dev/null
 
   fi
 
@@ -281,7 +281,7 @@ elif [ "$ARG1_ACTION" == "destroy" ]; then
 elif [ "$ARG1_ACTION" == "stop" ]; then
 
   log "${GREEN}stopping docker containers."
-  cd "moodlehq-docker" || abort "moodlehq-docker is missing"
+  cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
   check_is_running
 
   # Shut down and destroy containers
@@ -292,7 +292,7 @@ elif [ "$ARG1_ACTION" == "stop" ]; then
 elif [ "$ARG1_ACTION" == "behat" ]; then
   log "${GREEN}bin/moodle-docker-compose exec -u www-data webserver php admin/tool/behat/cli/run.php $ALL_REMAINING_ARGS"
 
-  cd "moodlehq-docker" || abort "moodlehq-docker is missing"
+  cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
   check_is_running
 
   bin/moodle-docker-compose exec -u www-data webserver php admin/tool/behat/cli/run.php "$ALL_REMAINING_ARGS"
@@ -302,7 +302,7 @@ elif [ "$ARG1_ACTION" == "behat" ]; then
 elif [ "$ARG1_ACTION" == "phpunit" ]; then
   log "${GREEN}bin/moodle-docker-compose exec webserver vendor/bin/phpunit $ALL_REMAINING_ARGS"
 
-  cd "moodlehq-docker" || abort "moodlehq-docker is missing"
+  cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
   check_is_running
 
   bin/moodle-docker-compose exec webserver vendor/bin/phpunit "$ALL_REMAINING_ARGS"
@@ -312,7 +312,7 @@ elif [ "$ARG1_ACTION" == "phpunit" ]; then
 elif [ "$ARG1_ACTION" == "update" ]; then
 
   log "${GREEN}Updating container"
-  cd "moodlehq-docker" || abort "moodlehq-docker is missing"
+  cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
   check_is_running
 
   #TODO reinstall behat/unit testing after you add a plugin.
