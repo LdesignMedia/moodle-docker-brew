@@ -64,12 +64,12 @@
 # moodle-docker behat 41 addtional
 
 # VARS.
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR_MOODLE_DOCKER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # TODO compare against brew list --versions moodle-docker start upgrade if its higher than current
 PLUGIN_VERSION="1.0.13"
 
-MOODLE_LIST=$(cat $SCRIPT_DIR/moodle_VERSIONS.txt)
+MOODLE_LIST=$(cat $SCRIPT_DIR_MOODLE_DOCKER/moodle_VERSIONS.txt)
 VERSIONS=$(echo "$MOODLE_LIST" | awk -F'|' '{ print $1 }')
 ARG2_SELECTED_VERSION=""
 VERSION_FOUND=0
@@ -77,7 +77,7 @@ ARG1_ACTION="$1"
 ARG2_SELECTED_VERSION="$2"
 # ----------------------------------------------------------------
 
-source "$SCRIPT_DIR/scripts/helper.sh"
+source "$SCRIPT_DIR_MOODLE_DOCKER/scripts/helper.sh"
 
 # Below is the alias (moodle-docker) to https://github.com/LdesignMedia/homebrew-moodle-docker/blob/main/install_moodle_docker.sh this is used for
 # installing and workarround home directory issues.
@@ -85,7 +85,7 @@ log "Brew runner version:"
 brew list --versions moodle-docker
 
 log "${GREEN}Moodle docker $PLUGIN_VERSION by Ldesign Media"
-log "Running in $SCRIPT_DIR"
+log "Running in $SCRIPT_DIR_MOODLE_DOCKER"
 log "${YELLOW}You can read the full documentation here: https://github.com/LdesignMedia/moodle-docker-brew"
 
 if [ "$ARG1_ACTION" == "help" ]; then
@@ -99,7 +99,6 @@ fi
 
 if [ "$ARG1_ACTION" == "upgrade" ]; then
   log "${GREEN}Moodle upgrade brew package"
-  cd "$SCRIPT_DIR"/../ || exit
   git status
   git pull
   exit 0;
