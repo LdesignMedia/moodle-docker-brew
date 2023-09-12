@@ -99,6 +99,7 @@ fi
 
 if [ "$ARG1_ACTION" == "upgrade" ]; then
   log "${GREEN}Moodle upgrade brew package"
+  cd "$SCRIPT_DIR"/../ || exit
   git status
   git pull
   exit 0;
