@@ -4,8 +4,8 @@ Simplify your Moodle plugin development with this Homebrew script for managing M
 
 ## Features
 
+- Build for MacOS and OrbStack (high-speed Docker client)
 - Homebrew installation support
-- Compatibility with MacOS and OrbStack (high-speed Docker client)
 - Concurrently run multiple Moodle versions
 - Support for `behat` and `phpunit` testing frameworks
 - Pre-execution checks for error prevention
@@ -54,7 +54,7 @@ moodle-docker stop {version}  # e.g., moodle-docker stop 42
 # Remove Moodle instances and data
 moodle-docker destroy {version}  # e.g., moodle-docker destroy 42
 
-# Update PHPUnit and Behat tests
+# Update PHPUnit and Behat tests neede if you add new plugins
 moodle-docker update {version}  # e.g., moodle-docker update 42
 ```
 
