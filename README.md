@@ -99,6 +99,11 @@ To connect to a Behat VNC session:
 
 ![img.png](screenshots/database.png)
 
+## Contributing
+
+Contributions are welcome and will be fully credited. We accept contributions via Pull Requests on Github.
+
+
 ## To-Do List
 
 - [ ] Add developer/commander tools
