@@ -13,7 +13,6 @@ This brew script simplifies the process of running the Moodle Docker, which can 
 - Assigns unique ports for each Moodle test suite.
 - Can be accessed locally using http://localhost:8042/ where in this example 42 is the Moodle version number.
 
-
 ## Installation with Homebrew
 
 Make sure brew is installed on your system. You can use the following command to install brew:
@@ -23,16 +22,6 @@ Make sure brew is installed on your system. You can use the following command to
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
-### Install moodle-docker
-```bash
- brew install ldesignmedia/moodledocker/moodle-docker
-```
-_More information about the brew launcher can be found at: https://github.com/LdesignMedia/homebrew-moodle-docker_
-
-
-This repo is automatically created in `~/.moodle-docker-brew` after the homebrew installation. This directory will contain all Moodle files and data.
-Keep in mind if you run `moodle-docker destroy` all data of the given moodle version will be removed.
-
 ### Install OrbStack
 
 We recommend using OrbStack as a docker client. It's much faster than the default docker client. We currently support only MacOS and OrbStack.
@@ -40,6 +29,15 @@ We recommend using OrbStack as a docker client. It's much faster than the defaul
 ```bash
 brew install orbstack
 ```
+
+### Install moodle-docker
+```bash
+ brew install ldesignmedia/moodledocker/moodle-docker
+```
+_More information about the brew launcher can be found at: https://github.com/LdesignMedia/homebrew-moodle-docker_
+
+This repo is automatically created in `~/.moodle-docker-brew` after the homebrew installation. This directory will contain all Moodle files and data.
+Keep in mind if you run `moodle-docker destroy` all data of the given moodle version will be removed.
 
 ## Usage commands
 
