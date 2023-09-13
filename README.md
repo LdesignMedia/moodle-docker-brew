@@ -112,6 +112,7 @@ Contributions are welcome and will be fully credited. We accept contributions vi
 - [ ] Command to stop all running instances
 - [ ] Display all running Moodle versions
 - [ ] Option to install specific PHP versions
+- [ ] Run the container for behat testing interactive, so we can pause a behat test
 
 ## Authors
 
