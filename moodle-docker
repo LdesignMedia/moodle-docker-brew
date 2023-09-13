@@ -167,19 +167,27 @@ export MOODLE_DOCKER_WWWROOT="${SCRIPT_DIR_MOODLE_DOCKER}/moodle/${ARG2_SELECTED
 # Set PHP for older versions
 if [ "$ARG2_SELECTED_VERSION" == "39" ]; then
   export MOODLE_DOCKER_PHP_VERSION=7.4
-  log "Running with the PHP version: 7.4 (See: https://docs.moodle.org/402/en/PHP)"
+  log "${GREEN}Running with the PHP version: 7.4 (See: https://docs.moodle.org/402/en/PHP)"
 else
-  log "Running with the PHP version: 8.0"
+  log "${GREEN}Running with the PHP version: 8.0"
   export MOODLE_DOCKER_PHP_VERSION=8.0
 fi
 
 log "${YELLOW}DB port: $MOODLE_DOCKER_DB_PORT"
-log "${YELLOW}VNC port: $MOODLE_DOCKER_SELENIUM_VNC_PORT"
+log "${YELLOW}VNC port: $MOODLE_DOCKER_SELENIUM_VNC_PORT Password: secret"
 log "${YELLOW}Webserver port: $MOODLE_DOCKER_WEB_PORT"
 log "${YELLOW}Directory: $MOODLE_DOCKER_WWWROOT"
 log "${YELLOW}When running Available on: http://localhost:$MOODLE_DOCKER_WEB_PORT/"
+log "${YELLOW}Login: username: admin password: test"
 log "${YELLOW}Behat faildumps: http://localhost:$MOODLE_DOCKER_WEB_PORT/_/faildumps/"
 log "${YELLOW}Mail catcher: http://localhost:$MOODLE_DOCKER_WEB_PORT/_/mail/"
+log "${YELLOW}Acceptance testing INFO + Definitions: http://localhost:$MOODLE_DOCKER_WEB_PORT//admin/tool/behat/index.php"
+log ""
+log "${YELLOW}Behat tests: https://moodledev.io/general/development/tools/behat"
+log "${YELLOW}How to write behat tests: https://moodledev.io/general/development/tools/behat/writing"
+log "${YELLOW}Behat definitions: https://behat.org/en/latest/user_guide/context/definitions.html"
+log ""
+log "${YELLOW}How to write unit tests: https://docs.moodle.org/dev/Writing_PHPUnit_tests"
 
 # ----------------------------------------------------------------
 
