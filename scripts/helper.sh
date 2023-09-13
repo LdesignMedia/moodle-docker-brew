@@ -105,6 +105,12 @@ function setup() {
     abort "This script is not running on macOS."
   fi
 
+  if [[ $- == *i* ]]; then
+    log "You are in interactive mode."
+  else
+    abort "You are in non-interactive mode."
+  fi
+
   if [ "$(id -u)" -eq 0 ]; then
     abort "You are running as root."
   fi
