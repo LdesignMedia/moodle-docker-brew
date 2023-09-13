@@ -108,6 +108,7 @@ if [ "$ARG1_ACTION" == "upgrade" ]; then
 
   # Back to the original directory.
   cd "$ORIGINAL_DIR"
+  brew upgrade moodle-docker
   exit 0
 fi
 
