@@ -14,18 +14,30 @@ This brew script simplifies the process of running the Moodle Docker, which can 
 - Can be accessed locally using http://localhost:8042/ where in this example 42 is the Moodle version number.
 
 
-## Installation with homebrew
+## Installation with Homebrew
 
-How to: https://github.com/LdesignMedia/homebrew-moodle-docker
+Make sure brew is installed on your system. You can use the following command to install brew:
 
-This repository is located at `~/.moodle-docker-brew` after the homebrew installation. 
+### Install Homebrew
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+### Install moodle-docker
+```bash
+ brew install ldesignmedia/moodledocker/moodle-docker
+```
+_More information about the brew launcher can be found at: https://github.com/LdesignMedia/homebrew-moodle-docker_
+
+
+This repo is automatically created in `~/.moodle-docker-brew` after the homebrew installation. This directory will contain all Moodle files and data.
+Keep in mind if you run `moodle-docker destroy` all data of the given moodle version will be removed.
 
 ## Usage
 
 ```bash
 # Examples:
 moodle-docker help
-moodle-docker upgrade     # (Install latest version of moodle-docker)
 
 moodle-docker start 39    # (Install/start a Moodle 39 instance)
 moodle-docker start 311   # (Install/start a Moodle 311 instance)
@@ -44,6 +56,19 @@ moodle-docker destroy 42  # (Remove a Moodle 41 instance, all data/docker contai
 
 moodle-docker update 42  # (Reload PHPunit and Behat testsite)
 ```
+
+## Upgrade to latest version of moodle-docker
+
+```bash
+brew upgrade moodle-docker
+moodle-docker upgrade     # (Install latest version of moodle-docker)
+```
+
+## PHP versions
+
+Only Moodle 3.9 will work with PHP `7.4`. All other versions will use PHP `8.0`. 
+Currently, you can't change the PHP version.
+
 
 ## Behat and phpunit
 
