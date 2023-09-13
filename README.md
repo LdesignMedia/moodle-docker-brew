@@ -33,7 +33,15 @@ _More information about the brew launcher can be found at: https://github.com/Ld
 This repo is automatically created in `~/.moodle-docker-brew` after the homebrew installation. This directory will contain all Moodle files and data.
 Keep in mind if you run `moodle-docker destroy` all data of the given moodle version will be removed.
 
-## Usage
+### Install OrbStack
+
+We recommend using OrbStack as a docker client. It's much faster than the default docker client. We currently support only MacOS and OrbStack.
+
+```bash
+brew install orbstack
+```
+
+## Usage commands
 
 ```bash
 # Examples:
@@ -68,7 +76,6 @@ moodle-docker upgrade     # (Install latest version of moodle-docker)
 
 Only Moodle 3.9 will work with PHP `7.4`. All other versions will use PHP `8.0`. 
 Currently, you can't change the PHP version.
-
 
 ## Behat and phpunit
 
