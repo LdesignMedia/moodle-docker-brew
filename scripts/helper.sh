@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -i
 # Author: Luuk Verhoeven
 # Date: 29.01.2023, 06:20
 #
