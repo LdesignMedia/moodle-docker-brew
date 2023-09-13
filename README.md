@@ -90,17 +90,23 @@ To connect to a Behat VNC session:
 - Port: `59000 + Moodle version number` (e.g., 59042 for Moodle 42)
 - Password: `secret`
 
+## Database connection with e.g. Navicat
+
+- Host: `localhost` or `0.0.0.0`
+- Username: `moodle`
+- Port: `36000 + Moodle version number` (e.g., 30042 for Moodle 42)
+- Password: `m@0dl3ing`
+
+![img.png](screenshots/database.png)
+
 ## To-Do List
 
 - [ ] Add developer/commander tools
-- [ ] Implement `directlogin.php`
-- [ ] Configure PHPStorm for plugin testing
+- [ ] How to video how to configure PHPStorm for plugin testing
 - [ ] Add Xdebug settings
-- [ ] Navicat connection guide
 - [ ] Command to stop all running instances
 - [ ] Display all running Moodle versions
 - [ ] Option to install specific PHP versions
-- [ ] Xdebug toggle feature
 
 ## Authors
 
