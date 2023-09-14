@@ -306,7 +306,7 @@ elif [ "$ARG1_ACTION" == "behat" ]; then
   cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
   check_is_running
 
-  bin/moodle-docker-compose exec -it -u www-data webserver php admin/tool/behat/cli/run.php "$ALL_REMAINING_ARGS"
+  bin/moodle-docker-compose exec -it -u www-data webserver bash -c "php admin/tool/behat/cli/run.php $ALL_REMAINING_ARGS"
 
 # PHPUNIT COMMAND
 # ----------------------------------------------------------------
