@@ -13,7 +13,7 @@ Simplify your Moodle plugin development with this Homebrew script for managing M
 - Moodle version support: 42, 41, 40, 311, 310, 39
 - Unique port assignments for different Moodle test suites
 - Local access via `http://localhost:{port}/` where `{port}` corresponds to the Moodle version (e.g., 8042 for Moodle 42)
-
+- Default account "admin" password is "test"
 ## Installation
 
 ### Prerequisites
