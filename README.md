@@ -94,7 +94,7 @@ To connect to a Behat VNC session:
 
 - Host: `localhost` or `0.0.0.0`
 - Username: `moodle`
-- Port: `36000 + Moodle version number` (e.g., 30042 for Moodle 42)
+- Port: `33000 + Moodle version number` (e.g., 33042 for Moodle 42)
 - Password: `m@0dl3ing`
 
 ![img.png](screenshots/database.png)
