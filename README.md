@@ -13,7 +13,7 @@ Simplify your Moodle plugin development with this Homebrew script for managing M
 - Moodle version support: 42, 41, 40, 311, 310, 39
 - Unique port assignments for different Moodle test suites
 - Local access via `http://localhost:{port}/` where `{port}` corresponds to the Moodle version (e.g., 8042 for Moodle 42)
-
+- Default account "admin" password is "test"
 ## Installation
 
 ### Prerequisites
@@ -54,7 +54,7 @@ moodle-docker stop {version}  # e.g., moodle-docker stop 42
 # Remove Moodle instances and data
 moodle-docker destroy {version}  # e.g., moodle-docker destroy 42
 
-# Update PHPUnit and Behat tests neede if you add new plugins
+# Update PHPUnit and Behat tests needed if you add new plugins
 moodle-docker update {version}  # e.g., moodle-docker update 42
 ```
 
@@ -94,7 +94,7 @@ To connect to a Behat VNC session:
 
 - Host: `localhost` or `0.0.0.0`
 - Username: `moodle`
-- Port: `36000 + Moodle version number` (e.g., 30042 for Moodle 42)
+- Port: `33000 + Moodle version number` (e.g., 33042 for Moodle 42)
 - Password: `m@0dl3ing`
 
 ![img.png](screenshots/database.png)
