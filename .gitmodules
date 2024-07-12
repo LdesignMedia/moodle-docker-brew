@@ -1,4 +1,4 @@
 [submodule "moodlehq-docker"]
 	path = moodlehq-docker
 	url = git@github.com:moodlehq/moodle-docker.git
-	branch = master
+	branch = main
