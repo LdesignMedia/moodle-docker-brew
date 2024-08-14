@@ -68,7 +68,7 @@ ORIGINAL_DIR=$(pwd)
 SCRIPT_DIR_MOODLE_DOCKER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # TODO compare against brew list --versions moodle-docker start upgrade if its higher than current
-PLUGIN_VERSION="1.0.17"
+PLUGIN_VERSION="1.0.18"
 
 MOODLE_LIST=$(cat $SCRIPT_DIR_MOODLE_DOCKER/moodle_VERSIONS.txt)
 VERSIONS=$(echo "$MOODLE_LIST" | awk -F'|' '{ print $1 }')
@@ -169,8 +169,11 @@ export MOODLE_DOCKER_WWWROOT="${SCRIPT_DIR_MOODLE_DOCKER}/moodle/${ARG2_SELECTED
 if [ "$ARG2_SELECTED_VERSION" == "39" ]; then
   export MOODLE_DOCKER_PHP_VERSION=7.4
   log "${GREEN}Running with the PHP version: 7.4 (See: https://docs.moodle.org/402/en/PHP)"
+elif [ "$ARG2_SELECTED_VERSION" -ge "44" ]; then
+  export MOODLE_DOCKER_PHP_VERSION=8.1
+  log "${GREEN}Running with PHP version: 8.1"
 else
-  log "${GREEN}Running with the PHP version: 8.0"
+  log "${GREEN}Running with PHP version: 8.0"
   export MOODLE_DOCKER_PHP_VERSION=8.0
 fi
 

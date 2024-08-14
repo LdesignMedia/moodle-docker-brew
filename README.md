@@ -10,7 +10,7 @@ Simplify your Moodle plugin development with this Homebrew script for managing M
 - Support for `behat` and `phpunit` testing frameworks
 - Pre-execution checks for error prevention
 - Local Moodle files storage (`~/.moodle-docker-brew/moodle`)
-- Moodle version support: 42, 41, 40, 311, 310, 39
+- Moodle version support: 44, 43, 42, 41, 40, 311, 310, 39
 - Unique port assignments for different Moodle test suites
 - Local access via `http://localhost:{port}/` where `{port}` corresponds to the Moodle version (e.g., 8042 for Moodle 42)
 - Default account "admin" password is "test"
