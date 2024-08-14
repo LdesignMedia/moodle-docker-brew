@@ -142,18 +142,18 @@ function setup() {
     abort "Orbstack is not installed, please install it first."
   fi
 
+  if [ -f "$SCRIPT_DIR/../.gitmodules" ]; then
+    abort "Submodules found (old codebase) (please run \"moodle-docker upgrade\" to run on the latest version)."
+  fi
+
   if [ ! -f "$SCRIPT_DIR/../moodlehq-docker/config.docker-template.php" ]; then
     echo "Missing submodule, trying to fix it."
 
     echo "$SCRIPT_DIR/../"
     cd $SCRIPT_DIR/../
 
-    # Try to solve this issue.
-    git rm -f moodlehq-docker
-    rm -rf .git/modules/moodlehq-docker
-
     git clone git@github.com:moodlehq/moodle-docker.git moodlehq-docker
-    abort "Git submodule is missing (moodlehq-docker)."
+    abort "Git submodule was not found, please try again."
   fi
 
 }

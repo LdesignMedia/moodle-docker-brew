@@ -101,13 +101,23 @@ fi
 if [ "$ARG1_ACTION" == "upgrade" ]; then
   cd "$SCRIPT_DIR_MOODLE_DOCKER" || abort "~/.moodle-docker-brew is missing"
   log "${GREEN}Moodle upgrade brew package"
-  git pull
 
-  # Update the submodule.
-  git submodule update --init --recursive --remote
+  # Update the main repo.
+  git pull
+  git fetch origin
+  git reset --hard origin/main
+  git clean -fd
+
+  # Update the submodule (git@github.com:moodlehq/moodle-docker.git).
+  cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "~/.moodle-docker-brew/moodlehq-docker is missing"
+  git pull
+  git fetch origin
+  git reset --hard origin/main
+  git clean -fd
 
   # Back to the original directory.
-  cd "$ORIGINAL_DIR"
+  cd "$ORIGINAL_DIR" || exit
+
   brew upgrade moodle-docker
   exit 0
 fi
