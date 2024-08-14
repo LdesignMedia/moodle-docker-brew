@@ -149,8 +149,10 @@ function setup() {
     cd $SCRIPT_DIR/../
 
     # Try to solve this issue.
-    echo "submodule update --init --recursive"
-    git submodule update --init --recursive
+    git rm -f moodlehq-docker
+    rm -rf .git/modules/moodlehq-docker
+
+    git clone git@github.com:moodlehq/moodle-docker.git moodlehq-docker
     abort "Git submodule is missing (moodlehq-docker)."
   fi
 
