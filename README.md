@@ -37,6 +37,8 @@ brew install orbstack
 ```bash
 brew install ldesignmedia/moodledocker/moodle-docker
 ```
+More info about this packages can be found here: https://github.com/LdesignMedia/homebrew-moodle-docker
+
 
 > **Note:** The script automatically creates a directory at `~/.moodle-docker-brew` to store Moodle files and data. Using `moodle-docker destroy` will remove all data for a specific Moodle version.
 
