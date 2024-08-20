@@ -68,7 +68,7 @@ ORIGINAL_DIR=$(pwd)
 SCRIPT_DIR_MOODLE_DOCKER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # TODO compare against brew list --versions moodle-docker start upgrade if its higher than current
-PLUGIN_VERSION="1.0.19"
+PLUGIN_VERSION="1.0.20"
 
 MOODLE_LIST=$(cat $SCRIPT_DIR_MOODLE_DOCKER/moodle_VERSIONS.txt)
 VERSIONS=$(echo "$MOODLE_LIST" | awk -F'|' '{ print $1 }')
@@ -102,6 +102,8 @@ if [ "$ARG1_ACTION" == "upgrade" ]; then
   cd "$SCRIPT_DIR_MOODLE_DOCKER" || abort "~/.moodle-docker-brew is missing"
   log "${GREEN}Moodle upgrade brew package"
 
+  brew upgrade moodle-docker
+
   # Update the main repo.
   git pull
   git fetch origin
@@ -109,6 +111,15 @@ if [ "$ARG1_ACTION" == "upgrade" ]; then
   git clean -fd
 
   # Update the submodule (git@github.com:moodlehq/moodle-docker.git).
+  log "Updating moodlehq-docker"
+
+  # If folder not exists clone the repository
+
+  if [ ! -d "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" ]; then
+     log "${GREEN}Install moodlehq-docker"
+     git clone git@github.com:moodlehq/moodle-docker.git moodlehq-docker
+  fi
+
   cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "~/.moodle-docker-brew/moodlehq-docker is missing"
   git pull
   git fetch origin
@@ -118,7 +129,6 @@ if [ "$ARG1_ACTION" == "upgrade" ]; then
   # Back to the original directory.
   cd "$ORIGINAL_DIR" || exit
 
-  brew upgrade moodle-docker
   exit 0
 fi
 
