@@ -143,7 +143,7 @@ function setup() {
   fi
 
   if [ -f "$SCRIPT_DIR/../.gitmodules" ]; then
-    abort "Submodules found (old codebase) (please run \"moodle-docker upgrade\" to run on the latest version)."
+    abort "Submodules found in: $SCRIPT_DIR (please run \"moodle-docker upgrade\" to run on the latest version)."
   fi
 
   if [ ! -f "$SCRIPT_DIR/../moodlehq-docker/config.docker-template.php" ]; then
