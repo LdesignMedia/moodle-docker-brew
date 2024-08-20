@@ -63,6 +63,8 @@
 # moodle-docker destroy 41
 # moodle-docker behat 41 addtional
 
+# TODO Flip arguments and support MWP eg moodle-docker 44mwp start | moodle-docker 44lms start
+
 # VARS.
 ORIGINAL_DIR=$(pwd)
 SCRIPT_DIR_MOODLE_DOCKER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
