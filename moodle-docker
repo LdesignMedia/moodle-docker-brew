@@ -102,8 +102,11 @@ if [ "$ARG1_ACTION" == "upgrade" ]; then
   cd "$SCRIPT_DIR_MOODLE_DOCKER" || abort "~/.moodle-docker-brew is missing"
   log "${GREEN}Moodle upgrade brew package"
 
+  # Check if the brew package itself has changed.
+  brew update
   brew upgrade moodle-docker
 
+  # Cleanup old  .gitmodules
   rm -f .gitmodules > /dev/null
 
   # Update the main repo.
@@ -116,12 +119,12 @@ if [ "$ARG1_ACTION" == "upgrade" ]; then
   log "Updating moodlehq-docker"
 
   # If folder not exists clone the repository
-
   if [ ! -d "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" ]; then
     log "${GREEN}Install moodlehq-docker"
     git clone git@github.com:moodlehq/moodle-docker.git moodlehq-docker
   fi
 
+  # Update the official docker suite from Moodle.
   cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "~/.moodle-docker-brew/moodlehq-docker is missing"
   git pull
   git fetch origin
