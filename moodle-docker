@@ -70,7 +70,7 @@ ORIGINAL_DIR=$(pwd)
 SCRIPT_DIR_MOODLE_DOCKER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # TODO compare against brew list --versions moodle-docker start upgrade if its higher than current
-PLUGIN_VERSION="1.0.20"
+PLUGIN_VERSION="1.0.21"
 
 MOODLE_LIST=$(cat $SCRIPT_DIR_MOODLE_DOCKER/moodle_VERSIONS.txt)
 VERSIONS=$(echo "$MOODLE_LIST" | awk -F'|' '{ print $1 }')
@@ -94,14 +94,14 @@ log "${YELLOW}You can read the full documentation here: https://github.com/Ldesi
 if [ "$ARG1_ACTION" == "help" ]; then
   log "Usage: $0 command moodleversion [arg3 arg4 ...]"
   log "command: start | update | stop | destroy | info | behat | phpunit | upgrade"
-  log "Example of moodleversion: 43,42,41,40,311,310,39"
+  log "Example of moodleversion: 44, 43, 42, 41, 40, 311, 310, 39"
   log "More arguments are optional for phpunit or behat"
 
   abort "-"
 fi
 
 if [ "$ARG1_ACTION" == "upgrade" ]; then
-  cd "$SCRIPT_DIR_MOODLE_DOCKER" || abort "~/.moodle-docker-brew is missing"
+  cd "$SCRIPT_DIR_MOODLE_DOCKER" || abort "~/moodle-docker-brew is missing"
   log "${GREEN}Moodle upgrade brew package"
 
   # Check if the brew package itself has changed.
@@ -127,7 +127,7 @@ if [ "$ARG1_ACTION" == "upgrade" ]; then
   fi
 
   # Update the official docker suite from Moodle.
-  cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "~/.moodle-docker-brew/moodlehq-docker is missing"
+  cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "~/moodle-docker-brew/moodlehq-docker is missing"
   git pull
   git fetch origin
   git reset --hard origin/main

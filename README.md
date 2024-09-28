@@ -9,7 +9,7 @@ Simplify your Moodle plugin development with this Homebrew script for managing M
 - Concurrently run multiple Moodle versions
 - Support for `behat` and `phpunit` testing frameworks
 - Pre-execution checks for error prevention
-- Local Moodle files storage (`~/.moodle-docker-brew/moodle`)
+- Local Moodle files storage (`~/moodle-docker-brew/moodle`)
 - Moodle version support: 44, 43, 42, 41, 40, 311, 310, 39
 - Unique port assignments for different Moodle test suites
 - Local access via `http://localhost:{port}/` where `{port}` corresponds to the Moodle version (e.g., 8042 for Moodle 42)
@@ -40,7 +40,7 @@ brew install ldesignmedia/moodledocker/moodle-docker
 More info about this packages can be found here: https://github.com/LdesignMedia/homebrew-moodle-docker
 
 
-> **Note:** The script automatically creates a directory at `~/.moodle-docker-brew` to store Moodle files and data. Using `moodle-docker destroy` will remove all data for a specific Moodle version.
+> **Note:** The script automatically creates a directory at `~/moodle-docker-brew` to store Moodle files and data. Using `moodle-docker destroy` will remove all data for a specific Moodle version.
 
 ## Commands
 
