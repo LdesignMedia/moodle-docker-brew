@@ -1,3 +1,4 @@
+45|https://packaging.moodle.org/stable405/moodle-latest-405.zip
 44|https://packaging.moodle.org/stable404/moodle-latest-404.zip
 43|https://packaging.moodle.org/stable403/moodle-latest-403.zip
 42|https://packaging.moodle.org/stable402/moodle-latest-402.zip
