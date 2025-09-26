@@ -58,6 +58,55 @@ moodle-docker stop 42
 moodle-docker destroy 42
 ```
 
+## Step‑by‑Step Usage
+
+1) Start a Moodle version
+
+- Pick a supported version number (e.g., 42 for 4.2) and start it:
+
+```bash
+moodle-docker start 42
+```
+
+The script downloads Moodle, starts the containers, installs the DB, and initializes Behat + PHPUnit. Watch the output for the line beginning with `Directory:` — that path is where your Moodle files live for that version.
+
+2) Open the site
+
+- Visit `http://localhost:8042`
+- Login with `admin` / `test`
+
+3) Develop plugins (optional)
+
+- Place your plugin inside the working directory shown as `Directory:` in the terminal output, under the correct subfolder, e.g.:
+  - `.../moodle/42/local/myplugin`
+  - `.../moodle/42/mod/myactivity`
+  - `.../moodle/42/blocks/myblock`
+- Go to Site administration → Notifications to install/upgrade your plugin.
+- After adding or changing plugins, re-initialize test frameworks:
+
+```bash
+moodle-docker update 42
+```
+
+4) Run tests
+
+- Behat (with optional tags):
+
+```bash
+moodle-docker behat 42 --tags=@your_tag
+```
+
+- PHPUnit (point to a test or directory):
+
+```bash
+moodle-docker phpunit 42 path/to/tests
+```
+
+5) Stop or destroy when done
+
+- Stop containers (preserves data): `moodle-docker stop 42`
+- Destroy containers and data for that version: `moodle-docker destroy 42`
+
 ## Commands
 
 ```bash
@@ -69,6 +118,7 @@ moodle-docker update  {version}         # Re-init Behat + PHPUnit (after adding 
 moodle-docker behat   {version} [...]   # Run Behat in the container
 moodle-docker phpunit {version} [...]   # Run PHPUnit in the container
 moodle-docker upgrade                   # Update this tool + upstream moodlehq/moodle-docker
+moodle-docker grunt   {version} [watch] # Run grunt watch (JS/CSS builder)
 ```
 
 Examples:
@@ -92,6 +142,27 @@ moodle-docker update {version}   # e.g., moodle-docker update 42
 
 - Verify Behat status and steps mapping in your browser: `http://localhost:80NN/admin/tool/behat/index.php` (e.g., 8042 for 4.2).
 - Run tests: `moodle-docker behat {version} [--tags=...]`.
+
+## Grunt (JS/CSS Build)
+
+Use grunt to rebuild AMD modules and theme assets during development.
+
+```bash
+# Start the watcher for Moodle 4.2
+moodle-docker grunt 42 watch
+```
+
+What this does inside the container:
+
+- Installs NVM if missing, selects a Node version based on `package.json` engines (`22`, `20`, `18`, or `16`; defaults to `20`).
+- Installs `grunt-cli` globally and project dependencies (`npm ci` if lockfile exists, else `npm install`).
+- Runs `grunt watch` in `/var/www/html`.
+
+Notes:
+
+- This is a long-running process; keep it open in a dedicated terminal tab.
+- Stop with Ctrl+C. You can restart anytime.
+- If dependencies change or you hit errors, run `moodle-docker grunt {version} watch` again to reinstall as needed.
 
 ## Access & Ports
 

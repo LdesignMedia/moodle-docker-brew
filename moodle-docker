@@ -94,7 +94,7 @@ log "${YELLOW}You can read the full documentation here: https://github.com/Ldesi
 
 if [ "$ARG1_ACTION" == "help" ]; then
   log "Usage: $0 command moodleversion [arg3 arg4 ...]"
-  log "command: start | update | stop | destroy | info | behat | phpunit | upgrade"
+  log "command: start | update | stop | destroy | info | behat | phpunit | upgrade | grunt"
   log "Example of moodleversion: 45, 44, 43, 42, 41, 40, 311, 310, 39"
   log "More arguments are optional for phpunit or behat"
 
@@ -174,9 +174,9 @@ ALL_REMAINING_ARGS="$@"
 
 # Validate the first argument
 case "$ARG1_ACTION" in
-start | update | stop | destroy | info | behat | phpunit) ;;
+start | update | stop | destroy | info | behat | phpunit | grunt) ;;
 *)
-  abort "Error: Invalid first argument. Allowed values are: start, update, stop, destroy."
+  abort "Error: Invalid first argument. Allowed values are: start, update, stop, destroy, behat, phpunit, upgrade, grunt."
   ;;
 esac
 
@@ -348,6 +348,104 @@ elif [ "$ARG1_ACTION" == "phpunit" ]; then
   check_is_running
 
   bin/moodle-docker-compose exec webserver vendor/bin/phpunit "$ALL_REMAINING_ARGS"
+
+# GRUNT COMMAND
+# ----------------------------------------------------------------
+elif [ "$ARG1_ACTION" == "grunt" ]; then
+  # Usage: moodle-docker grunt {version} [watch]
+  cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
+  check_is_running
+
+  GRUNT_SUBCOMMAND="$3"
+  if [ -z "$GRUNT_SUBCOMMAND" ]; then
+    GRUNT_SUBCOMMAND="watch"
+  fi
+
+  if [ "$GRUNT_SUBCOMMAND" != "watch" ]; then
+    abort "Unknown grunt subcommand: $GRUNT_SUBCOMMAND (supported: watch)"
+  fi
+
+  log "${GREEN}Starting grunt watch inside container (this will keep the session open)."
+
+  if [ "${MOODLE_DOCKER_GRUNT_METHOD:-dockerexec}" = "compose" ]; then
+    # Run grunt watch with NVM bootstrap inside the container for www-data.
+    bin/moodle-docker-compose exec -it -u www-data webserver bash -lc '
+    set -uo pipefail
+    export NVM_DIR="/var/www/html/.nvm"
+    mkdir -p "$NVM_DIR"
+    if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+      if command -v curl >/dev/null 2>&1; then
+        curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+      elif command -v wget >/dev/null 2>&1; then
+        wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+      else
+        echo "curl or wget required to install nvm" >&2
+        exit 1
+      fi
+    fi
+    # shellcheck disable=SC1090
+    . "$NVM_DIR/nvm.sh"
+
+    cd /var/www/html
+    NODEVER="20"
+    if [ -f package.json ]; then
+      echo "Checking package.json for Node version requirements..."
+      NODE_REQ=$(grep -oE "\"node\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" package.json 2>/dev/null | head -1)
+      echo "Found Node requirement: $NODE_REQ"
+
+      if echo "$NODE_REQ" | grep -qE "22\.|>=22" 2>/dev/null; then
+        NODEVER="22"
+      elif echo "$NODE_REQ" | grep -qE "20\.|>=20" 2>/dev/null; then
+        NODEVER="20"
+      elif echo "$NODE_REQ" | grep -qE "18\.|>=18" 2>/dev/null; then
+        NODEVER="18"
+      elif echo "$NODE_REQ" | grep -qE "16\.|>=16" 2>/dev/null; then
+        NODEVER="16"
+      fi
+    fi
+
+    echo "Using Node $NODEVER"
+    nvm install "$NODEVER"
+    nvm use "$NODEVER"
+    node -v
+    npm -v
+
+    # Ensure grunt-cli and dependencies
+    npm install -g grunt-cli
+    if [ -f package-lock.json ]; then
+      npm ci
+    else
+      npm install
+    fi
+
+    echo "Starting grunt watch (Ctrl+C to stop)"
+    echo "========================================="
+
+    # Trap SIGINT (Ctrl+C) to ensure clean exit
+    trap "echo Stopping grunt watch...; exit 0" INT TERM
+
+    # Run grunt watch with unbuffered output
+    grunt watch
+  '
+  else
+    # Fallback/default: use docker exec directly for reliable streaming
+    container_name="${COMPOSE_PROJECT_NAME}-webserver-1"
+    log "Attaching to container: $container_name"
+    log "${YELLOW}Installing dependencies if needed (this may take a moment on first run)..."
+
+    # Ensure bash and curl/wget are present for nvm install (best-effort; ignore failures)
+    docker exec -u root "$container_name" sh -c 'command -v bash >/dev/null 2>&1 || (apt-get update && apt-get install -y bash >/dev/null 2>&1 || apk add --no-cache bash >/dev/null 2>&1 || dnf -y install bash >/dev/null 2>&1 || yum -y install bash >/dev/null 2>&1 || true)' 2>/dev/null
+    docker exec -u root "$container_name" sh -c 'command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1 || (apt-get update && apt-get install -y curl >/dev/null 2>&1 || apk add --no-cache curl >/dev/null 2>&1 || dnf -y install curl >/dev/null 2>&1 || yum -y install curl >/dev/null 2>&1 || true)' 2>/dev/null
+
+    # Copy the runner script into the container then execute with a TTY for live output
+    docker cp "$SCRIPT_DIR_MOODLE_DOCKER/scripts/grunt_watch_inside_container.sh" "$container_name:/tmp/grunt_watch_inside_container.sh"
+
+    # Make script executable
+    docker exec "$container_name" chmod +x /tmp/grunt_watch_inside_container.sh
+
+    # Run the script with proper TTY allocation
+    docker exec -it -u www-data "$container_name" bash -lc '/tmp/grunt_watch_inside_container.sh'
+  fi
 
 # UPDATE COMMAND
 # ----------------------------------------------------------------
