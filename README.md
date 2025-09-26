@@ -1,123 +1,163 @@
 # Moodle Docker Brew
 
-Simplify your Moodle plugin development with this Homebrew script for managing Moodle Docker environments.
+Homebrew-installable helper for running MoodleHQ’s official `moodle-docker` stack on macOS with OrbStack. Start multiple Moodle versions side-by-side, run Behat and PHPUnit, and iterate on plugins quickly.
 
-## Features
+## Highlights
 
-- Build for MacOS and OrbStack (high-speed Docker client)
-- Homebrew installation support
-- Concurrently run multiple Moodle versions
-- Support for `behat` and `phpunit` testing frameworks
-- Pre-execution checks for error prevention
-- Local Moodle files storage (`~/moodle-docker-brew/moodle`)
-- Moodle version support: 44, 43, 42, 41, 40, 311, 310, 39
-- Unique port assignments for different Moodle test suites
-- Local access via `http://localhost:{port}/` where `{port}` corresponds to the Moodle version (e.g., 8042 for Moodle 42)
-- Default account "admin" password is "test"
-## Installation
+- Wrapper around the official Moodle developer Docker image (https://github.com/moodlehq/moodle-docker)
+- macOS + OrbStack optimized workflow (fast, simple)
+- Homebrew formula: `moodle-docker`
+- Run multiple Moodle versions concurrently
+- Built-in runners for `behat` and `phpunit`
+- Safety checks before doing destructive actions
+- Persistent data under `~/moodle-docker-brew/moodle` (when installed via Homebrew)
+- Supported versions: 4.5, 4.4, 4.3, 4.2, 4.1, 4.0, 3.11, 3.10, 3.9
+- Port convention per version: web `80NN`, DB `330NN`, VNC `590NN` (e.g., 8042/33042/59042 for 4.2)
+- Default admin credentials: `admin` / `test`
 
-### Prerequisites
+## Requirements
 
-Ensure Homebrew is installed. If not, you can install it using:
+- macOS
+- Docker via OrbStack (`brew install orbstack`)
+- git and unzip available on PATH
+- GitHub SSH key configured for `upgrade` (clones `moodlehq/moodle-docker` via SSH)
 
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
+## Install
 
-### Docker Client: OrbStack
-
-For a faster Docker experience, we recommend OrbStack:
-
-```bash
-brew install orbstack
-```
-
-### Moodle Docker Installation
+### Homebrew (recommended)
 
 ```bash
 brew install ldesignmedia/moodledocker/moodle-docker
 ```
-More info about this packages can be found here: https://github.com/LdesignMedia/homebrew-moodle-docker
 
+More info about the tap: https://github.com/LdesignMedia/homebrew-moodle-docker
 
-> **Note:** The script automatically creates a directory at `~/moodle-docker-brew` to store Moodle files and data. Using `moodle-docker destroy` will remove all data for a specific Moodle version.
+### Local clone (for development)
+
+```bash
+git clone https://github.com/LdesignMedia/moodle-docker-brew.git
+cd moodle-docker-brew
+./moodle-docker help
+```
+
+> Note: When installed via Homebrew, Moodle data lives under `~/moodle-docker-brew/moodle`. Using `moodle-docker destroy` removes the data for the selected version.
+
+## Quick Start
+
+```bash
+# Start Moodle 4.2 (downloads Moodle, creates DB, launches containers)
+moodle-docker start 42
+
+# Open your browser
+open http://localhost:8042/
+
+# Stop containers (keeps data)
+moodle-docker stop 42
+
+# Remove containers and data for 4.2
+moodle-docker destroy 42
+```
 
 ## Commands
 
 ```bash
-moodle-docker help  # Display help
-
-# Start Moodle instances
-moodle-docker start {version}  # e.g., moodle-docker start 42
-
-# Stop Moodle instances
-moodle-docker stop {version}  # e.g., moodle-docker stop 42
-
-# Remove Moodle instances and data
-moodle-docker destroy {version}  # e.g., moodle-docker destroy 42
-
-# Update PHPUnit and Behat tests needed if you add new plugins
-moodle-docker update {version}  # e.g., moodle-docker update 42
+moodle-docker help                      # Usage and examples
+moodle-docker start   {version}         # Start (e.g., 45, 44, 43, 42, 41, 40, 311, 310, 39)
+moodle-docker stop    {version}         # Stop containers (preserves data)
+moodle-docker destroy {version}         # Stop and remove containers + data
+moodle-docker update  {version}         # Re-init Behat + PHPUnit (after adding plugins)
+moodle-docker behat   {version} [...]   # Run Behat in the container
+moodle-docker phpunit {version} [...]   # Run PHPUnit in the container
+moodle-docker upgrade                   # Update this tool + upstream moodlehq/moodle-docker
 ```
+
+Examples:
+
+```bash
+# Behat: run a tagged suite on 4.2
+moodle-docker behat 42 --tags=@auth_manual
+
+# PHPUnit: run a test on 4.2
+moodle-docker phpunit 42 auth/manual/tests/manual_test.php
+```
+
+## Behat Setup
+
+- First-time init: Behat is initialized automatically the first time you run `moodle-docker start {version}`.
+- Re-initialize after changes (e.g., adding/updating plugins):
+
+```bash
+moodle-docker update {version}   # e.g., moodle-docker update 42
+```
+
+- Verify Behat status and steps mapping in your browser: `http://localhost:80NN/admin/tool/behat/index.php` (e.g., 8042 for 4.2).
+- Run tests: `moodle-docker behat {version} [--tags=...]`.
+
+## Access & Ports
+
+- Web: `http://localhost:80NN/` (e.g., 8042)
+- DB (MariaDB): host `localhost`, port `330NN`, user `moodle`, pass `m@0dl3ing`
+- VNC (Selenium): host `localhost`, port `590NN`, password `secret`
+- Behat faildumps: `http://localhost:80NN/_/faildumps/`
+- Mail catcher: `http://localhost:80NN/_/mail/`
+
+VNC viewer example: download [RealVNC Viewer](https://www.realvnc.com/en/connect/download/viewer/), connect to `localhost:59042` for Moodle 4.2.
+
+![Database connection example](screenshots/database.png)
+
+## PHP Versions
+
+- 3.9 → PHP 7.4
+- 4.4 and newer → PHP 8.1
+- 4.0–4.3 → PHP 8.0
+
+These versions are selected automatically; manual selection is not currently supported.
 
 ## Upgrade
 
-To update to the latest version:
+Upgrade the Homebrew formula and refresh the embedded `moodlehq/moodle-docker` checkout:
 
 ```bash
 brew upgrade moodle-docker
-moodle-docker upgrade  # Install the latest moodle-docker version
+moodle-docker upgrade
 ```
 
-## PHP Version Constraints
+Tip: `upgrade` uses SSH. Ensure your GitHub SSH key is configured or the clone will fail.
 
-Moodle 3.9 is compatible only with PHP 7.4. All other versions use PHP 8.0. The PHP version is currently not configurable.
+## Troubleshooting
 
-## Behat and PHPUnit Examples
-
-```bash
-# Behat
-moodle-docker behat {version} --tags=@tag  # e.g., moodle-docker behat 42 --tags=@auth_manual
-
-# PHPUnit
-moodle-docker phpunit {version} path/to/test  # e.g., moodle-docker phpunit 42 auth/manual/tests/manual_test.php
-```
-
-## Behat VNC Support
-
-To connect to a Behat VNC session:
-
-- Download a VNC client like [RealVNC](https://www.realvnc.com/en/connect/download/viewer/)
-- Host: `localhost` or `0.0.0.0`
-- Port: `59000 + Moodle version number` (e.g., 59042 for Moodle 42)
-- Password: `secret`
-
-## Database connection with e.g. Navicat
-
-- Host: `localhost` or `0.0.0.0`
-- Username: `moodle`
-- Port: `33000 + Moodle version number` (e.g., 33042 for Moodle 42)
-- Password: `m@0dl3ing`
-
-![img.png](screenshots/database.png)
+- OrbStack not installed: install with `brew install orbstack` and start OrbStack.
+- Ports in use: stop the other process or choose a different version number.
+- Missing unzip/git: install via Homebrew (`brew install unzip git`).
+- SSH access errors on `upgrade`: add your GitHub SSH key (`ssh -T git@github.com`).
+- Clean start: run `moodle-docker destroy {version}` and then `moodle-docker start {version}`.
 
 ## Contributing
 
-Contributions are welcome and will be fully credited. We accept contributions via Pull Requests on Github.
+Contributions are welcome via pull request.
 
+- Keep changes small and focused; use 2‑space indent for shell scripts.
+- Share reusable logic under `scripts/helper.sh`.
+- Lint/format: `shellcheck moodle-docker scripts/*.sh` and `shfmt -w .`.
+- Verify end‑to‑end: start → behat/phpunit → stop.
+- Don’t commit secrets or local `moodle/*` contents.
 
-## To-Do List
+## Version Map
+
+Supported Moodle versions and their download URLs are defined in `moodle_versions.txt`. Update this file when adding new versions.
+
+## To‑Do
 
 - [ ] Add developer/commander tools
-- [ ] How to video how to configure PHPStorm for plugin testing
-- [ ] Add Xdebug settings
+- [ ] Video: configure PhpStorm for plugin testing
+- [ ] Xdebug settings
 - [ ] Command to stop all running instances
 - [ ] Display all running Moodle versions
 - [ ] Option to install specific PHP versions
-- [ ] Run the container for behat testing interactive, so we can pause a behat test
+- [ ] Interactive Behat mode (pause/resume)
 
 ## Authors
 
-* Luuk Verhoeven :: [Ldesign Media](https://ldesignmedia.nl/) - [luuk@ldesignmedia.nl](luuk@ldesignmedia.nl)
+- Luuk Verhoeven — [Ldesign Media](https://ldesignmedia.nl/) — [luuk@ldesignmedia.nl](mailto:luuk@ldesignmedia.nl)
 
 <img src="https://ldesignmedia.nl/themes/ldesignmedia/assets/images/logo/logo.svg" alt="ldesignmedia" height="70px">
