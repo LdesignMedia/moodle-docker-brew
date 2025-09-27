@@ -180,27 +180,72 @@ Connect to the Selenium container to watch tests run visually:
 
 ### Interactive Testing
 
-Add the `--interactive` or `-i` flag to enable interactive mode:
+Interactive mode allows you to debug tests step-by-step and watch them run in real-time via VNC.
+
+#### How to Run Interactive Tests
 
 ```bash
-# Run tests interactively
+# Run tests interactively with the --interactive or -i flag
 moodle-docker behat 42 --interactive --tags=@mytest
 
-# Tests will:
-# - Pause at @pause tags in your scenarios
-# - Stop on first failure
-# - Show verbose output
-# - Wait for Enter key to continue
+# Or use the short form
+moodle-docker behat 42 -i --tags=@mytest
 ```
 
-Use `@pause` tags in your Behat scenarios to create breakpoints:
+#### What Happens in Interactive Mode
+
+1. **VNC Connection Pause**: The script pauses before starting tests, giving you time to connect your VNC viewer
+2. **Test Pausing**: Tests pause at `@pause` tags in your scenarios
+3. **Failure Stops**: Tests stop immediately on the first failure for debugging
+4. **Verbose Output**: Detailed test execution information is displayed
+5. **Manual Control**: Press Enter to continue when tests pause
+
+#### Setting Up VNC to Watch Tests
+
+When you run tests in interactive mode:
+
+1. The script will pause and display:
+   ```
+   ⏸️  PAUSE: Open your VNC viewer now!
+   Connect VNC viewer to: localhost:59042 (port varies by version)
+   Password: secret
+   ```
+
+2. Open your VNC viewer and connect before pressing Enter
+
+3. Once connected, press Enter to start the tests
+
+#### Using @pause Tags for Breakpoints
+
+Add `@pause` tags to your Behat scenarios to create breakpoints:
 
 ```gherkin
 @mytest @pause
 Scenario: Test with a breakpoint
     Given I am on homepage
     When I log in as "admin"
-    Then I should see "Dashboard"  # Test will pause here if @pause is used
+    Then I should see "Dashboard"  # Test pauses here
+    And I click on "Site administration"  # Press Enter to continue to this step
+```
+
+When the test reaches a `@pause` tag:
+- The test execution pauses
+- You can inspect the browser state in VNC
+- Press Enter in the terminal to continue
+
+#### Example Workflow
+
+```bash
+# 1. Start interactive test
+moodle-docker behat 42 -i --tags=@auth_manual
+
+# 2. Script pauses - connect VNC viewer to localhost:59042
+
+# 3. Press Enter when VNC is connected
+
+# 4. Tests run - they pause at any @pause tags
+
+# 5. Press Enter to continue past each pause point
 ```
 
 ### Useful URLs

@@ -5,6 +5,29 @@ All notable changes to moodle-docker-brew will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.32] - 2025-09-27
+
+### Added
+- VNC connection pause in interactive mode - script pauses to allow VNC viewer connection
+- Press Enter prompt when running interactive tests to give time for VNC setup
+- Comprehensive interactive testing documentation in README
+
+### Changed
+- Enhanced interactive mode workflow with clear VNC connection instructions
+- Improved README with step-by-step interactive testing guide
+- Better explanation of @pause tags and breakpoint functionality
+
+## [1.0.31] - 2025-09-27
+
+### Added
+- Automatic Behat initialization check before running tests
+- Automatic PHPUnit initialization check before running tests
+- Auto-initialize test frameworks if vendor/bin/behat or vendor/bin/phpunit don't exist
+
+### Fixed
+- Fixed "Could not open input file: /var/www/html/vendor/bin/behat" error on first run
+- Fixed similar error for PHPUnit when running tests before initialization
+
 ## [1.0.25] - 2025-09-27
 
 ### Added
