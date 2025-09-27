@@ -71,7 +71,7 @@ ORIGINAL_DIR=$(pwd)
 SCRIPT_DIR_MOODLE_DOCKER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # TODO compare against brew list --versions moodle-docker start upgrade if its higher than current
-PLUGIN_VERSION="1.0.24"
+PLUGIN_VERSION="1.0.25"
 
 MOODLE_LIST=$(cat $SCRIPT_DIR_MOODLE_DOCKER/moodle_VERSIONS.txt)
 VERSIONS=$(echo "$MOODLE_LIST" | awk -F'|' '{ print $1 }')
@@ -79,6 +79,16 @@ ARG2_SELECTED_VERSION=""
 VERSION_FOUND=0
 ARG1_ACTION="$1"
 ARG2_SELECTED_VERSION="$2"
+
+# Check for manual PHP version override
+MANUAL_PHP_VERSION=""
+for arg in "$@"; do
+  if [[ "$arg" =~ ^--php=(.+)$ ]]; then
+    MANUAL_PHP_VERSION="${BASH_REMATCH[1]}"
+    # Remove the --php argument from ALL_REMAINING_ARGS
+    ALL_REMAINING_ARGS="${ALL_REMAINING_ARGS//--php=$MANUAL_PHP_VERSION/}"
+  fi
+done
 # ----------------------------------------------------------------
 
 source "$SCRIPT_DIR_MOODLE_DOCKER/scripts/helper.sh"
@@ -104,10 +114,28 @@ if [ "$BREW_VERSION" != "not installed via brew" ]; then
 fi
 
 if [ "$ARG1_ACTION" == "help" ]; then
-  log "Usage: $0 command moodleversion [arg3 arg4 ...]"
-  log "command: start | update | stop | destroy | info | behat | phpunit | upgrade | grunt"
-  log "Example of moodleversion: 45, 44, 43, 42, 41, 40, 311, 310, 39"
-  log "More arguments are optional for phpunit or behat"
+  log "Usage: $0 command moodleversion [options] [arg3 arg4 ...]"
+  log ""
+  log "Commands:"
+  log "  start     - Start Moodle Docker environment"
+  log "  stop      - Stop running containers (preserves data)"
+  log "  destroy   - Remove containers and all data"
+  log "  update    - Re-initialize test frameworks after plugin changes"
+  log "  behat     - Run Behat acceptance tests"
+  log "  phpunit   - Run PHPUnit tests"
+  log "  grunt     - Run grunt watch for JS/CSS compilation"
+  log "  upgrade   - Update the tool and moodlehq/moodle-docker"
+  log ""
+  log "Moodle versions: 52, 51, 50, 45, 44, 43, 42, 41, 40, 311, 310, 39"
+  log ""
+  log "Options:"
+  log "  --php=VERSION   - Override PHP version (e.g., --php=8.3)"
+  log ""
+  log "Examples:"
+  log "  $0 start 50                    # Start Moodle 5.0 with default PHP 8.2"
+  log "  $0 start 50 --php=8.3          # Start Moodle 5.0 with PHP 8.3"
+  log "  $0 behat 44 --tags=@auth       # Run Behat tests with specific tags"
+  log "  $0 phpunit 45 auth/tests/       # Run PHPUnit tests for auth"
 
   abort "-"
 fi
@@ -208,16 +236,35 @@ export MOODLE_DOCKER_SELENIUM_VNC_PORT="590${ARG2_SELECTED_VERSION}"
 export MOODLE_DOCKER_WEB_PORT="80${ARG2_SELECTED_VERSION}"
 export MOODLE_DOCKER_WWWROOT="${SCRIPT_DIR_MOODLE_DOCKER}/moodle/${ARG2_SELECTED_VERSION}"
 
-# Set PHP for older versions
-if [ "$ARG2_SELECTED_VERSION" == "39" ]; then
+# Determine PHP version based on Moodle version or manual override
+if [ -n "$MANUAL_PHP_VERSION" ]; then
+  # Use manually specified PHP version
+  export MOODLE_DOCKER_PHP_VERSION="$MANUAL_PHP_VERSION"
+  log "  PHP version: ${GREEN}${MANUAL_PHP_VERSION}${RESET} ${YELLOW}(manually set)${RESET}"
+elif [ "$ARG2_SELECTED_VERSION" == "39" ]; then
+  # Moodle 3.9 requires PHP 7.4
   export MOODLE_DOCKER_PHP_VERSION=7.4
   log "  PHP version: ${GREEN}7.4${RESET}"
-elif [ "$ARG2_SELECTED_VERSION" -ge "44" ]; then
+elif [ "$ARG2_SELECTED_VERSION" == "310" ] || [ "$ARG2_SELECTED_VERSION" == "311" ]; then
+  # Moodle 3.10-3.11 requires PHP 7.4 or 8.0
+  export MOODLE_DOCKER_PHP_VERSION=8.0
+  log "  PHP version: ${GREEN}8.0${RESET}"
+elif [ "$ARG2_SELECTED_VERSION" == "40" ] || [ "$ARG2_SELECTED_VERSION" == "41" ] || [ "$ARG2_SELECTED_VERSION" == "42" ] || [ "$ARG2_SELECTED_VERSION" == "43" ]; then
+  # Moodle 4.0-4.3 requires PHP 8.0 minimum
+  export MOODLE_DOCKER_PHP_VERSION=8.0
+  log "  PHP version: ${GREEN}8.0${RESET}"
+elif [ "$ARG2_SELECTED_VERSION" == "44" ] || [ "$ARG2_SELECTED_VERSION" == "45" ]; then
+  # Moodle 4.4-4.5 requires PHP 8.1 minimum
   export MOODLE_DOCKER_PHP_VERSION=8.1
   log "  PHP version: ${GREEN}8.1${RESET}"
+elif [ "$ARG2_SELECTED_VERSION" -ge "50" ]; then
+  # Moodle 5.0+ requires PHP 8.2 minimum
+  export MOODLE_DOCKER_PHP_VERSION=8.2
+  log "  PHP version: ${GREEN}8.2${RESET}"
 else
-  log "  PHP version: ${GREEN}8.0${RESET}"
+  # Default to PHP 8.0 for unknown versions
   export MOODLE_DOCKER_PHP_VERSION=8.0
+  log "  PHP version: ${GREEN}8.0${RESET} ${YELLOW}(default)${RESET}"
 fi
 
 log "  Database: ${GREEN}MariaDB${RESET}"
