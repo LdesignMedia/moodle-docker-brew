@@ -126,6 +126,7 @@ show_help() {
   log "  ${GREEN}start${RESET}     - Start Moodle Docker environment"
   log "  ${GREEN}stop${RESET}      - Stop running containers (preserves data)"
   log "  ${GREEN}destroy${RESET}   - Remove containers and all data ⚠️"
+  log "  ${GREEN}init${RESET}      - Re-initialize test databases (Behat & PHPUnit)"
   log "  ${GREEN}update${RESET}    - Re-initialize test frameworks after plugin changes"
   log "  ${GREEN}behat${RESET}     - Run Behat acceptance tests"
   log "  ${GREEN}phpunit${RESET}   - Run PHPUnit tests"
@@ -180,6 +181,9 @@ show_help() {
   log ""
   log "  ${CYAN}# Run PHPUnit tests${RESET}"
   log "  moodle-docker phpunit 45 auth/tests/"
+  log ""
+  log "  ${CYAN}# Re-initialize test databases${RESET}"
+  log "  moodle-docker init 50"
   log ""
   log "  ${CYAN}# Install Xdebug${RESET}"
   log "  moodle-docker xdebug 50 install"
@@ -391,9 +395,9 @@ ALL_REMAINING_ARGS="$@"
 
 # Validate the first argument
 case "$ARG1_ACTION" in
-start | update | stop | destroy | info | behat | phpunit | grunt | xdebug) ;;
+start | update | stop | destroy | info | behat | phpunit | grunt | xdebug | init) ;;
 *)
-  abort "Error: Invalid first argument. Allowed values are: start, update, stop, destroy, behat, phpunit, upgrade, grunt, xdebug."
+  abort "Error: Invalid first argument. Allowed values are: start, update, stop, destroy, behat, phpunit, init, upgrade, grunt, xdebug."
   ;;
 esac
 
@@ -754,10 +758,12 @@ elif [ "$ARG1_ACTION" == "phpunit" ]; then
   cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
   check_is_running
 
-  # Check if PHPUnit is initialized
-  PHPUNIT_INITIALIZED=$(bin/moodle-docker-compose exec webserver bash -c "[ -f /var/www/html/vendor/bin/phpunit ] && echo 'yes' || echo 'no'" 2>/dev/null | tr -d '\r\n')
+  # Check if PHPUnit is initialized - Moodle shows an error when not initialized
+  # We use --list-tests as it triggers Moodle's environment check
+  PHPUNIT_CHECK=$(bin/moodle-docker-compose exec webserver bash -c "cd /var/www/html && vendor/bin/phpunit --list-tests 2>&1 | head -5" 2>/dev/null || echo "error")
 
-  if [ "$PHPUNIT_INITIALIZED" = "no" ]; then
+  # Check if PHPUnit environment is initialized by looking for the error message
+  if echo "$PHPUNIT_CHECK" | grep -q "is not initialised" || echo "$PHPUNIT_CHECK" | grep -q "error" || [ ! -f "$MOODLE_DOCKER_WWWROOT/vendor/bin/phpunit" ]; then
     log "⚠️  ${YELLOW}PHPUnit not initialized. Running initialization...${RESET}"
     log ""
     bin/moodle-docker-compose exec webserver php admin/tool/phpunit/cli/init.php
@@ -967,6 +973,51 @@ EOF
       exit 1
       ;;
   esac
+
+# INIT COMMAND
+# ----------------------------------------------------------------
+elif [ "$ARG1_ACTION" == "init" ]; then
+  log ""
+  log "========================================================================"
+  log "${GREEN}🔄 Re-initializing Test Databases - Moodle $ARG2_SELECTED_VERSION${RESET}"
+  log "========================================================================"
+  log ""
+  log "${YELLOW}This will rebuild the test databases for:${RESET}"
+  log "  • PHPUnit (unit tests)"
+  log "  • Behat (acceptance tests)"
+  log ""
+  log "${CYAN}Note: This drops and rebuilds test databases - production data is not affected.${RESET}"
+  log ""
+
+  cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
+  check_is_running
+
+  # Drop and re-initialize PHPUnit environment
+  log "🧬 ${YELLOW}Re-initializing PHPUnit test database...${RESET}"
+  log "  Dropping old test database..."
+  bin/moodle-docker-compose exec webserver php admin/tool/phpunit/cli/util.php --drop 2>/dev/null || true
+  log "  Building new test database..."
+  bin/moodle-docker-compose exec webserver php admin/tool/phpunit/cli/init.php
+  log "${GREEN}  ✓ PHPUnit database rebuilt${RESET}"
+  log ""
+
+  # Drop and re-initialize Behat environment
+  log "🧪 ${YELLOW}Re-initializing Behat test database...${RESET}"
+  log "  Dropping old test database..."
+  bin/moodle-docker-compose exec webserver php admin/tool/behat/cli/util.php --drop 2>/dev/null || true
+  log "  Building new test database..."
+  bin/moodle-docker-compose exec webserver php admin/tool/behat/cli/init.php
+  log "${GREEN}  ✓ Behat database rebuilt${RESET}"
+  log ""
+
+  log "========================================================================"
+  log "${GREEN}✅ Test databases successfully re-initialized!${RESET}"
+  log "========================================================================"
+  log ""
+  log "You can now run tests with fresh databases:"
+  log "  • PHPUnit: ${CYAN}moodle-docker phpunit $ARG2_SELECTED_VERSION <test>${RESET}"
+  log "  • Behat: ${CYAN}moodle-docker behat $ARG2_SELECTED_VERSION <options>${RESET}"
+  log ""
 
 # UPDATE COMMAND
 # ----------------------------------------------------------------
