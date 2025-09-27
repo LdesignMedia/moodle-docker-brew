@@ -155,6 +155,13 @@ show_help() {
   log "    • 310     - Moodle 3.10"
   log "    • 39      - Moodle 3.9 (LTS)"
   log ""
+  log "  ${CYAN}Moodle Workplace:${RESET} ${YELLOW}(requires GitLab access)${RESET}"
+  log "    • wp50    - Workplace 5.0"
+  log "    • wp45    - Workplace 4.5 (LTS)"
+  log "    • wp44    - Workplace 4.4"
+  log "    • wp43    - Workplace 4.3"
+  log "    • wp42    - Workplace 4.2"
+  log ""
   log "${YELLOW}OPTIONS:${RESET}"
   log "  --php=VERSION     Override PHP version (e.g., --php=8.3)"
   log "  --interactive,-i  Run Behat tests in interactive mode"
@@ -165,6 +172,7 @@ show_help() {
   log "  • Database: 330<version> (e.g., 33042 for v4.2)"
   log "  • VNC:      590<version> (e.g., 59042 for v4.2)"
   log "  • Dev uses: 8099, 33099, 59099"
+  log "  • Workplace: Uses 81xx, 331xx, 591xx (e.g., 8145 for wp45)"
   log ""
   log "${YELLOW}EXAMPLES:${RESET}"
   log "  ${CYAN}# Start Moodle 5.0${RESET}"
@@ -172,6 +180,9 @@ show_help() {
   log ""
   log "  ${CYAN}# Start with specific PHP version${RESET}"
   log "  moodle-docker start 50 --php=8.3"
+  log ""
+  log "  ${CYAN}# Start Moodle Workplace 4.5${RESET}"
+  log "  moodle-docker start wp45"
   log ""
   log "  ${CYAN}# Run Behat tests with tags${RESET}"
   log "  moodle-docker behat 44 --tags=@auth"
@@ -419,6 +430,13 @@ if [ "$ARG2_SELECTED_VERSION" == "dev" ]; then
   export MOODLE_DOCKER_DB_PORT="33099"
   export MOODLE_DOCKER_SELENIUM_VNC_PORT="59099"
   export MOODLE_DOCKER_WEB_PORT="8099"
+elif [[ "$ARG2_SELECTED_VERSION" == wp* ]]; then
+  # Workplace versions use 81xx, 331xx, 591xx ports
+  # Extract the numeric part from wp45 -> 45
+  WP_VERSION_NUM="${ARG2_SELECTED_VERSION#wp}"
+  export MOODLE_DOCKER_DB_PORT="331${WP_VERSION_NUM}"
+  export MOODLE_DOCKER_SELENIUM_VNC_PORT="591${WP_VERSION_NUM}"
+  export MOODLE_DOCKER_WEB_PORT="81${WP_VERSION_NUM}"
 else
   export MOODLE_DOCKER_DB_PORT="330${ARG2_SELECTED_VERSION}"
   export MOODLE_DOCKER_SELENIUM_VNC_PORT="590${ARG2_SELECTED_VERSION}"
@@ -456,6 +474,22 @@ elif [[ "$ARG2_SELECTED_VERSION" =~ ^[0-9]+$ ]] && [ "$ARG2_SELECTED_VERSION" -g
   # Moodle 5.0+ requires PHP 8.2 minimum
   export MOODLE_DOCKER_PHP_VERSION=8.2
   log "  PHP version: ${GREEN}8.2${RESET}"
+elif [[ "$ARG2_SELECTED_VERSION" == wp* ]]; then
+  # Handle Workplace versions - same PHP requirements as corresponding Moodle version
+  WP_VERSION_NUM="${ARG2_SELECTED_VERSION#wp}"
+  if [ "$WP_VERSION_NUM" == "50" ]; then
+    export MOODLE_DOCKER_PHP_VERSION=8.2
+    log "  PHP version: ${GREEN}8.2${RESET} ${YELLOW}(Workplace 5.0)${RESET}"
+  elif [ "$WP_VERSION_NUM" == "45" ] || [ "$WP_VERSION_NUM" == "44" ]; then
+    export MOODLE_DOCKER_PHP_VERSION=8.1
+    log "  PHP version: ${GREEN}8.1${RESET} ${YELLOW}(Workplace)${RESET}"
+  elif [ "$WP_VERSION_NUM" == "43" ] || [ "$WP_VERSION_NUM" == "42" ]; then
+    export MOODLE_DOCKER_PHP_VERSION=8.0
+    log "  PHP version: ${GREEN}8.0${RESET} ${YELLOW}(Workplace)${RESET}"
+  else
+    export MOODLE_DOCKER_PHP_VERSION=8.0
+    log "  PHP version: ${GREEN}8.0${RESET} ${YELLOW}(Workplace - default)${RESET}"
+  fi
 else
   # Default to PHP 8.0 for unknown versions
   export MOODLE_DOCKER_PHP_VERSION=8.0
@@ -504,41 +538,94 @@ if [ "$ARG1_ACTION" == "start" ]; then
   log "========================================================================"
   log ""
 
-  # Download the zip file to the moodle directory and name it using the selected_version
-  zip_file="$SCRIPT_DIR_MOODLE_DOCKER/moodle/${ARG2_SELECTED_VERSION}.zip"
+  # Check if this is a Workplace version (git-based) or standard Moodle (zip-based)
+  if [[ "$download_url" == git:* ]]; then
+    # Handle Moodle Workplace - Git-based installation
+    WORKPLACE_BRANCH="${download_url#git:}"
+    WORKPLACE_DIR="$SCRIPT_DIR_MOODLE_DOCKER/moodle/${ARG2_SELECTED_VERSION}"
+    WORKPLACE_REPO="git@gitlab.avetica.net:moodle-source/moodle-workplace.git"
 
-  if [ ! -f "$zip_file" ]; then
-    log "📥 Downloading Moodle $ARG2_SELECTED_VERSION..."
-    log "   Source: $download_url"
-    log ""
+    if [ ! -d "$WORKPLACE_DIR" ]; then
+      log "📥 Cloning Moodle Workplace $ARG2_SELECTED_VERSION..."
+      log "   Repository: $WORKPLACE_REPO"
+      log "   Branch: $WORKPLACE_BRANCH"
+      log ""
 
-    if command -v wget >/dev/null 2>&1; then
-      wget -O "$zip_file" "$download_url"
-    elif command -v curl >/dev/null 2>&1; then
-      curl -o "$zip_file" -L "$download_url"
+      # Clone the repository
+      if git clone "$WORKPLACE_REPO" "$WORKPLACE_DIR" 2>/dev/null; then
+        cd "$WORKPLACE_DIR"
+        git checkout "$WORKPLACE_BRANCH"
+        cd - > /dev/null
+        log "${GREEN}✓${RESET} Cloned successfully to: $WORKPLACE_DIR"
+      else
+        # Try HTTPS as fallback
+        log "${YELLOW}SSH clone failed, trying HTTPS...${RESET}"
+        WORKPLACE_REPO_HTTPS="https://gitlab.avetica.net/moodle-source/moodle-workplace.git"
+        if git clone "$WORKPLACE_REPO_HTTPS" "$WORKPLACE_DIR" 2>/dev/null; then
+          cd "$WORKPLACE_DIR"
+          git checkout "$WORKPLACE_BRANCH"
+          cd - > /dev/null
+          log "${GREEN}✓${RESET} Cloned successfully via HTTPS"
+        else
+          abort "❌ Failed to clone Workplace repository. Please check your GitLab access."
+        fi
+      fi
     else
-      abort "❌ Error: wget or curl is required to download the Moodle version."
+      # Repository already exists - check current branch and update
+      log "📂 Workplace directory exists: $WORKPLACE_DIR"
+      cd "$WORKPLACE_DIR"
+      CURRENT_BRANCH=$(git branch --show-current)
+
+      if [ "$CURRENT_BRANCH" != "$WORKPLACE_BRANCH" ]; then
+        log "🔄 Switching branch from $CURRENT_BRANCH to $WORKPLACE_BRANCH..."
+        git fetch origin
+        git checkout "$WORKPLACE_BRANCH"
+        git pull origin "$WORKPLACE_BRANCH"
+        log "${GREEN}✓${RESET} Switched to branch: $WORKPLACE_BRANCH"
+      else
+        log "🔄 Updating branch $WORKPLACE_BRANCH..."
+        git pull origin "$WORKPLACE_BRANCH"
+        log "${GREEN}✓${RESET} Updated to latest: $WORKPLACE_BRANCH"
+      fi
+      cd - > /dev/null
+    fi
+  else
+    # Handle standard Moodle - ZIP-based installation
+    zip_file="$SCRIPT_DIR_MOODLE_DOCKER/moodle/${ARG2_SELECTED_VERSION}.zip"
+
+    if [ ! -f "$zip_file" ]; then
+      log "📥 Downloading Moodle $ARG2_SELECTED_VERSION..."
+      log "   Source: $download_url"
+      log ""
+
+      if command -v wget >/dev/null 2>&1; then
+        wget -O "$zip_file" "$download_url"
+      elif command -v curl >/dev/null 2>&1; then
+        curl -o "$zip_file" -L "$download_url"
+      else
+        abort "❌ Error: wget or curl is required to download the Moodle version."
+      fi
+
+      log "${GREEN}✓${RESET} Downloaded successfully to: $zip_file"
+    else
+      log "${GREEN}✓${RESET} Using cached download: $zip_file"
     fi
 
-    log "${GREEN}✓${RESET} Downloaded successfully to: $zip_file"
-  else
-    log "${GREEN}✓${RESET} Using cached download: $zip_file"
-  fi
+    # Unzipping Moodle.
+    if [ ! -f "$zip_file" ]; then
+      abort "❌ Failed to download $download_url"
+    fi
 
-  # Unzipping Moodle.
-  if [ ! -f "$zip_file" ]; then
-    abort "❌ Failed to download $download_url"
-  fi
+    if [ ! -d "$SCRIPT_DIR_MOODLE_DOCKER/moodle/${ARG2_SELECTED_VERSION}" ]; then
+      log "📦 Extracting Moodle files..."
+      rm -rf "$SCRIPT_DIR_MOODLE_DOCKER/moodle/moodle"
+      unzip -q "$zip_file" -d "$SCRIPT_DIR_MOODLE_DOCKER/moodle/"
+      mv "$SCRIPT_DIR_MOODLE_DOCKER/moodle/moodle" "$SCRIPT_DIR_MOODLE_DOCKER/moodle/${ARG2_SELECTED_VERSION}"
 
-  if [ ! -d "$SCRIPT_DIR_MOODLE_DOCKER/moodle/${ARG2_SELECTED_VERSION}" ]; then
-    log "📦 Extracting Moodle files..."
-    rm -rf "$SCRIPT_DIR_MOODLE_DOCKER/moodle/moodle"
-    unzip -q "$zip_file" -d "$SCRIPT_DIR_MOODLE_DOCKER/moodle/"
-    mv "$SCRIPT_DIR_MOODLE_DOCKER/moodle/moodle" "$SCRIPT_DIR_MOODLE_DOCKER/moodle/${ARG2_SELECTED_VERSION}"
-
-    log "${GREEN}✓${RESET} Extracted to: ${SCRIPT_DIR_MOODLE_DOCKER}/moodle/${ARG2_SELECTED_VERSION}"
-  else
-    log "${GREEN}✓${RESET} Moodle directory exists: ${SCRIPT_DIR_MOODLE_DOCKER}/moodle/${ARG2_SELECTED_VERSION}"
+      log "${GREEN}✓${RESET} Extracted to: ${SCRIPT_DIR_MOODLE_DOCKER}/moodle/${ARG2_SELECTED_VERSION}"
+    else
+      log "${GREEN}✓${RESET} Moodle directory exists: ${SCRIPT_DIR_MOODLE_DOCKER}/moodle/${ARG2_SELECTED_VERSION}"
+    fi
   fi
 
   log ""

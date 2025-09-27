@@ -9,3 +9,8 @@ dev|https://packaging.moodle.org/moodle/moodle-latest.zip
 311|https://packaging.moodle.org/stable311/moodle-latest-311.zip
 310|https://packaging.moodle.org/stable310/moodle-latest-310.zip
 39|https://packaging.moodle.org/stable39/moodle-latest-39.zip
+wp50|git:WORKPLACE_500_LATEST
+wp45|git:WORKPLACE_405_LATEST
+wp44|git:WORKPLACE_404_LATEST
+wp43|git:WORKPLACE_403_LATEST
+wp42|git:WORKPLACE_402_LATEST
