@@ -51,6 +51,7 @@
 export RED=$(tput setaf 1)
 export GREEN=$(tput setaf 2)
 export YELLOW=$(tput setaf 3)
+export CYAN=$(tput setaf 6)
 export MAGENTA=$(tput setaf 5)
 export RESET=$(tput sgr0)
 export CURRENTDATE=$(date +%Y-%m-%d-%H-%M-%S)
@@ -99,63 +100,164 @@ function check_is_running() {
 }
 
 function setup() {
-  log "Initializing..."
+  log ""
+  log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  log "${CYAN}🔍 System Pre-Check${RESET}"
+  log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+  local errors=()
+  local warnings=()
+
+  # Check macOS
+  echo -n "Checking operating system... "
   if [[ "$(uname)" != "Darwin" ]]; then
-    abort "This script is not running on macOS."
+    echo "${RED}✗${RESET}"
+    errors+=("This script requires macOS (detected: $(uname))")
+  else
+    echo "${GREEN}✓ macOS${RESET}"
   fi
 
+  # Check interactive mode
+  echo -n "Checking shell mode... "
   if [[ $- == *i* ]]; then
-    log "You are in interactive mode."
+    echo "${GREEN}✓ Interactive${RESET}"
   else
-    abort "You are in non-interactive mode."
+    echo "${RED}✗${RESET}"
+    errors+=("Script must be run in interactive mode")
   fi
 
+  # Check not running as root
+  echo -n "Checking user permissions... "
   if [ "$(id -u)" -eq 0 ]; then
-    abort "You are running as root."
+    echo "${RED}✗${RESET}"
+    errors+=("Script should not be run as root")
+  else
+    echo "${GREEN}✓ Normal user${RESET}"
   fi
 
+  # Check Docker installation
+  echo -n "Checking Docker installation... "
   if which docker >/dev/null 2>&1; then
-    log "${GREEN}Docker is installed."
+    echo "${GREEN}✓ Installed${RESET}"
   else
-    abort "Docker is NOT installed."
+    echo "${RED}✗${RESET}"
+    errors+=("Docker is not installed. Install via OrbStack: brew install orbstack")
   fi
 
-  if [ -S /var/run/docker.sock ]; then
-    log "${GREEN}Docker is running."
+  # Check Docker daemon
+  echo -n "Checking Docker daemon... "
+  if docker info >/dev/null 2>&1; then
+    echo "${GREEN}✓ Running${RESET}"
   else
-    abort "Docker is NOT running."
+    echo "${RED}✗${RESET}"
+    errors+=("Docker daemon is not running. Start OrbStack application")
   fi
 
-  # Check if unzip is installed
+  # Check OrbStack
+  echo -n "Checking OrbStack... "
+  if [ -d "/Applications/OrbStack.app" ]; then
+    echo "${GREEN}✓ Installed${RESET}"
+  else
+    echo "${YELLOW}⚠${RESET}"
+    warnings+=("OrbStack not found. Install with: brew install orbstack")
+  fi
+
+  # Check required tools
+  echo -n "Checking required tools... "
+  local missing_tools=()
+
   if ! command -v unzip >/dev/null 2>&1; then
-    abort "Error: unzip is required to extract the Moodle version."
+    missing_tools+=("unzip")
   fi
 
-  # Check if git is installed
   if ! command -v git >/dev/null 2>&1; then
-    abort "Error: git is required."
+    missing_tools+=("git")
   fi
 
-  # Search for the application in the /Applications directory
-  if [ ! -d "/Applications/OrbStack.app" ]; then
-    abort "Orbstack is not installed, please install it first."
+  if ! command -v curl >/dev/null 2>&1; then
+    missing_tools+=("curl")
   fi
 
+  if [ ${#missing_tools[@]} -eq 0 ]; then
+    echo "${GREEN}✓ All present${RESET}"
+  else
+    echo "${RED}✗${RESET}"
+    errors+=("Missing required tools: ${missing_tools[*]}. Install with: brew install ${missing_tools[*]}")
+  fi
+
+  # Check moodlehq-docker
+  echo -n "Checking moodlehq-docker... "
+  if [ -f "$SCRIPT_DIR/../moodlehq-docker/config.docker-template.php" ]; then
+    echo "${GREEN}✓ Present${RESET}"
+  else
+    echo "${YELLOW}⚠${RESET}"
+    warnings+=("moodlehq-docker not found. Will attempt to clone...")
+
+    # Try to clone it
+    log ""
+    log "Installing moodlehq-docker..."
+    cd "$SCRIPT_DIR/../" || errors+=("Cannot change to parent directory")
+
+    if git clone git@github.com:moodlehq/moodle-docker.git moodlehq-docker 2>/dev/null; then
+      log "${GREEN}✓ Successfully cloned moodlehq-docker${RESET}"
+    else
+      errors+=("Failed to clone moodlehq-docker. Check SSH key: ssh -T git@github.com")
+    fi
+  fi
+
+  # Check for old submodules
+  echo -n "Checking for legacy submodules... "
   if [ -f "$SCRIPT_DIR/../.gitmodules" ]; then
-    abort "Submodules found in: $SCRIPT_DIR (please run \"moodle-docker upgrade\" to run on the latest version)."
+    echo "${YELLOW}⚠${RESET}"
+    warnings+=("Old submodules detected. Run 'moodle-docker upgrade' to update")
+  else
+    echo "${GREEN}✓ Clean${RESET}"
   fi
 
-  if [ ! -f "$SCRIPT_DIR/../moodlehq-docker/config.docker-template.php" ]; then
-    echo "Missing moodlehq-docker, trying to fix it."
-
-    echo "$SCRIPT_DIR/../"
-    cd $SCRIPT_DIR/../
-
-    git clone git@github.com:moodlehq/moodle-docker.git moodlehq-docker
-    abort "Git moodlehq-docker was not found, we should have installed it, please try again."
+  # Check disk space
+  echo -n "Checking disk space... "
+  local available_space=$(df -h "$SCRIPT_DIR" | awk 'NR==2 {print $4}' | sed 's/Gi$//')
+  if [[ "$available_space" =~ ^[0-9]+$ ]] && [ "$available_space" -lt 5 ]; then
+    echo "${YELLOW}⚠${RESET}"
+    warnings+=("Low disk space: ${available_space}GB available. Recommended: >5GB")
+  else
+    echo "${GREEN}✓ ${available_space} available${RESET}"
   fi
 
+  # Check network connectivity
+  echo -n "Checking network connectivity... "
+  if curl -s --head https://github.com >/dev/null 2>&1; then
+    echo "${GREEN}✓ Connected${RESET}"
+  else
+    echo "${YELLOW}⚠${RESET}"
+    warnings+=("Cannot reach github.com. Network issues may prevent downloads")
+  fi
+
+  log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  # Display warnings
+  if [ ${#warnings[@]} -gt 0 ]; then
+    log ""
+    log "${YELLOW}⚠️  Warnings:${RESET}"
+    for warning in "${warnings[@]}"; do
+      log "  • $warning"
+    done
+  fi
+
+  # Display errors and abort if any
+  if [ ${#errors[@]} -gt 0 ]; then
+    log ""
+    log "${RED}❌ Errors found:${RESET}"
+    for error in "${errors[@]}"; do
+      log "  • $error"
+    done
+    log ""
+    abort "Please fix the above errors before continuing"
+  fi
+
+  log ""
+  log "${GREEN}✅ All checks passed. System ready!${RESET}"
+  log ""
 }
 
 export -f log

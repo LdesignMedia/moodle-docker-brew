@@ -71,7 +71,7 @@ ORIGINAL_DIR=$(pwd)
 SCRIPT_DIR_MOODLE_DOCKER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # TODO compare against brew list --versions moodle-docker start upgrade if its higher than current
-PLUGIN_VERSION="1.0.33"
+PLUGIN_VERSION="1.0.35"
 
 MOODLE_LIST=$(cat $SCRIPT_DIR_MOODLE_DOCKER/moodle_VERSIONS.txt)
 VERSIONS=$(echo "$MOODLE_LIST" | awk -F'|' '{ print $1 }')
@@ -204,39 +204,151 @@ if [ "$ARG1_ACTION" == "help" ] || [ "$#" -eq 0 ]; then
 fi
 
 if [ "$ARG1_ACTION" == "upgrade" ]; then
-  cd "$SCRIPT_DIR_MOODLE_DOCKER" || abort "~/moodle-docker-brew is missing"
-  log "${GREEN}Moodle upgrade brew package"
+  log ""
+  log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  log "${CYAN}⬆️  Upgrading Moodle Docker Brew${RESET}"
+  log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  log ""
 
-  # Check if the brew package itself has changed.
-  brew update
-  brew upgrade moodle-docker
+  cd "$SCRIPT_DIR_MOODLE_DOCKER" || abort "Directory $SCRIPT_DIR_MOODLE_DOCKER is missing"
 
-  # Cleanup old  .gitmodules
-  rm -f .gitmodules > /dev/null
-
-  # Update the main repo.
-  git pull
-  git fetch origin
-  git reset --hard origin/main
-  git clean -fd
-
-  # Update the submodule (git@github.com:moodlehq/moodle-docker.git).
-  log "Updating moodlehq-docker"
-
-  # If folder not exists clone the repository
-  if [ ! -d "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" ]; then
-    log "${GREEN}Install moodlehq-docker"
-    git clone git@github.com:moodlehq/moodle-docker.git moodlehq-docker
+  # Step 1: Update Homebrew package
+  log "📦 ${YELLOW}Step 1/4: Checking Homebrew package updates...${RESET}"
+  if command -v brew >/dev/null 2>&1; then
+    brew update >/dev/null 2>&1
+    if brew list moodle-docker >/dev/null 2>&1; then
+      if brew outdated | grep -q "moodle-docker"; then
+        log "  Updating moodle-docker package..."
+        brew upgrade moodle-docker
+        log "  ${GREEN}✓ Package updated${RESET}"
+      else
+        log "  ${GREEN}✓ Package is up to date${RESET}"
+      fi
+    else
+      log "  ${YELLOW}⚠ Package not installed via Homebrew${RESET}"
+    fi
+  else
+    log "  ${YELLOW}⚠ Homebrew not available${RESET}"
   fi
 
-  # Update the official docker suite from Moodle.
-  cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "~/moodle-docker-brew/moodlehq-docker is missing"
-  git pull
-  git fetch origin
-  git reset --hard origin/main
-  git clean -fd
+  # Step 2: Update main repository
+  log ""
+  log "📁 ${YELLOW}Step 2/4: Updating moodle-docker-brew repository...${RESET}"
 
-  # Back to the original directory.
+  # Check for local changes
+  if [[ -n $(git status --porcelain 2>/dev/null) ]]; then
+    log "  ${YELLOW}⚠ Local changes detected. Stashing...${RESET}"
+    git stash push -m "Auto-stash before upgrade on $(date)" >/dev/null 2>&1
+    STASHED=true
+  fi
+
+  # Clean up old submodules if they exist
+  if [ -f .gitmodules ]; then
+    log "  Removing legacy .gitmodules..."
+    rm -f .gitmodules
+  fi
+
+  # Pull latest changes
+  log "  Fetching latest changes..."
+  git fetch origin >/dev/null 2>&1
+  git reset --hard origin/main >/dev/null 2>&1
+  git clean -fd >/dev/null 2>&1
+
+  log "  ${GREEN}✓ Repository updated to latest version${RESET}"
+
+  if [ "$STASHED" = true ]; then
+    log "  ${CYAN}ℹ️  Your local changes were stashed. Run 'git stash pop' to restore them.${RESET}"
+  fi
+
+  # Step 3: Update or install moodlehq-docker
+  log ""
+  log "🐳 ${YELLOW}Step 3/4: Updating moodlehq/moodle-docker...${RESET}"
+
+  if [ ! -d "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" ]; then
+    log "  Installing moodlehq-docker for the first time..."
+    if git clone git@github.com:moodlehq/moodle-docker.git moodlehq-docker 2>/dev/null; then
+      log "  ${GREEN}✓ Successfully installed moodlehq-docker${RESET}"
+    else
+      log "  ${RED}✗ Failed to clone moodlehq-docker${RESET}"
+      log "  ${YELLOW}Trying HTTPS instead...${RESET}"
+      if git clone https://github.com/moodlehq/moodle-docker.git moodlehq-docker 2>/dev/null; then
+        log "  ${GREEN}✓ Successfully installed via HTTPS${RESET}"
+      else
+        abort "Failed to clone moodlehq-docker. Check your internet connection."
+      fi
+    fi
+  else
+    cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker directory is missing"
+
+    # Check for local changes in moodlehq-docker
+    if [[ -n $(git status --porcelain 2>/dev/null) ]]; then
+      log "  ${YELLOW}⚠ Local modifications detected in moodlehq-docker${RESET}"
+      log "  Backing up local changes..."
+
+      # Create backup directory
+      BACKUP_DIR="$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker-backup-$(date +%Y%m%d-%H%M%S)"
+      cp -r "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" "$BACKUP_DIR"
+      log "  ${GREEN}✓ Backup created at: $BACKUP_DIR${RESET}"
+
+      # Reset to clean state
+      git reset --hard HEAD >/dev/null 2>&1
+      git clean -fd >/dev/null 2>&1
+    fi
+
+    # Fetch and update
+    log "  Fetching latest changes from moodlehq/moodle-docker..."
+    git fetch origin >/dev/null 2>&1
+
+    # Check if we're behind
+    LOCAL=$(git rev-parse HEAD)
+    REMOTE=$(git rev-parse origin/main)
+
+    if [ "$LOCAL" = "$REMOTE" ]; then
+      log "  ${GREEN}✓ Already up to date${RESET}"
+    else
+      log "  Updating to latest version..."
+      git reset --hard origin/main >/dev/null 2>&1
+      git clean -fd >/dev/null 2>&1
+      log "  ${GREEN}✓ Updated successfully${RESET}"
+    fi
+  fi
+
+  # Step 4: Verify installation
+  log ""
+  log "🔍 ${YELLOW}Step 4/4: Verifying installation...${RESET}"
+
+  cd "$SCRIPT_DIR_MOODLE_DOCKER" || exit
+
+  # Check critical files
+  MISSING_FILES=()
+  [ ! -f "moodle-docker" ] && MISSING_FILES+=("moodle-docker")
+  [ ! -f "moodlehq-docker/config.docker-template.php" ] && MISSING_FILES+=("config template")
+  [ ! -f "moodle_versions.txt" ] && MISSING_FILES+=("version list")
+
+  if [ ${#MISSING_FILES[@]} -eq 0 ]; then
+    log "  ${GREEN}✓ All critical files present${RESET}"
+  else
+    log "  ${RED}✗ Missing files: ${MISSING_FILES[*]}${RESET}"
+    abort "Installation incomplete. Please check the repository."
+  fi
+
+  # Get version info
+  NEW_VERSION=$(grep "PLUGIN_VERSION=" moodle-docker | cut -d'"' -f2)
+  log ""
+  log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  log "${GREEN}✅ Upgrade completed successfully!${RESET}"
+  log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  log ""
+  log "📋 ${CYAN}Summary:${RESET}"
+  log "  • Version: ${GREEN}$NEW_VERSION${RESET}"
+  log "  • Location: $SCRIPT_DIR_MOODLE_DOCKER"
+  log ""
+  log "💡 ${YELLOW}What's next:${RESET}"
+  log "  • Run 'moodle-docker help' to see available commands"
+  log "  • Start a Moodle instance with 'moodle-docker start <version>'"
+  log ""
+
+  # Back to the original directory
   cd "$ORIGINAL_DIR" || exit
 
   exit 0

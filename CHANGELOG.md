@@ -5,6 +5,44 @@ All notable changes to moodle-docker-brew will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.35] - 2025-09-27
+
+### Added
+- Smart git conflict handling during upgrades with automatic stashing
+- Backup creation for local modifications in moodlehq-docker
+- Step-by-step progress display during upgrade process
+- Fallback to HTTPS if SSH clone fails
+- Version verification after upgrade completion
+
+### Changed
+- Complete rewrite of upgrade function with better error handling
+- Improved feedback with 4-step upgrade process visualization
+- Better detection of whether updates are needed
+- Cleaner output with suppressed git command noise
+
+### Fixed
+- Fixed git merge conflicts when local changes exist in moodlehq-docker
+- Resolved "files would be overwritten by merge" errors
+- Handled untracked files properly during updates
+
+## [1.0.34] - 2025-09-27
+
+### Added
+- Comprehensive system pre-check with visual status indicators
+- Disk space validation (warns if less than 5GB available)
+- Network connectivity check to GitHub
+- Additional tool checks (curl requirement)
+- Real-time status display during checks with ✓/✗/⚠ indicators
+
+### Changed
+- Complete rewrite of setup() function with better error handling
+- Separated errors from warnings for clearer feedback
+- Added descriptive fix instructions for each potential issue
+- Improved Docker daemon check using docker info instead of socket check
+
+### Fixed
+- Added missing CYAN color variable for proper display formatting
+
 ## [1.0.33] - 2025-09-27
 
 ### Added
