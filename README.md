@@ -11,7 +11,7 @@ Homebrew-installable helper for running MoodleHQ’s official `moodle-docker` st
 - Built-in runners for `behat` and `phpunit`
 - Safety checks before doing destructive actions
 - Persistent data under `~/moodle-docker-brew/moodle` (when installed via Homebrew)
-- Supported versions: 4.5, 4.4, 4.3, 4.2, 4.1, 4.0, 3.11, 3.10, 3.9
+- Supported versions: 5.2, 5.1, 5.0, 4.5, 4.4, 4.3, 4.2, 4.1, 4.0, 3.11, 3.10, 3.9
 - Port convention per version: web `80NN`, DB `330NN`, VNC `590NN` (e.g., 8042/33042/59042 for 4.2)
 - Default admin credentials: `admin` / `test`
 
@@ -212,6 +212,10 @@ Contributions are welcome via pull request.
 - Lint/format: `shellcheck moodle-docker scripts/*.sh` and `shfmt -w .`.
 - Verify end‑to‑end: start → behat/phpunit → stop.
 - Don’t commit secrets or local `moodle/*` contents.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a detailed version history.
 
 ## Version Map
 
