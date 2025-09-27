@@ -392,7 +392,6 @@ Supported Moodle versions and their download URLs are defined in `moodle_version
 - [ ] Video: configure PhpStorm for plugin testing
 - [ ] Command to stop all running instances
 - [ ] Display all running Moodle versions
-- [x] ~~Interactive Behat mode (pause/resume)~~ ✅ Completed in v1.0.30
 
 ## Authors
 

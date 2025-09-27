@@ -71,7 +71,7 @@ ORIGINAL_DIR=$(pwd)
 SCRIPT_DIR_MOODLE_DOCKER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # TODO compare against brew list --versions moodle-docker start upgrade if its higher than current
-PLUGIN_VERSION="1.0.32"
+PLUGIN_VERSION="1.0.33"
 
 MOODLE_LIST=$(cat $SCRIPT_DIR_MOODLE_DOCKER/moodle_VERSIONS.txt)
 VERSIONS=$(echo "$MOODLE_LIST" | awk -F'|' '{ print $1 }')
@@ -113,35 +113,94 @@ if [ "$BREW_VERSION" != "not installed via brew" ]; then
   log ""
 fi
 
-if [ "$ARG1_ACTION" == "help" ]; then
-  log "Usage: $0 command moodleversion [options] [arg3 arg4 ...]"
+# Function to display help
+show_help() {
+  log "${CYAN}╔══════════════════════════════════════════════════════════════════════╗${RESET}"
+  log "${CYAN}║${RESET}                    ${GREEN}MOODLE DOCKER BREW HELP${RESET}                         ${CYAN}║${RESET}"
+  log "${CYAN}╚══════════════════════════════════════════════════════════════════════╝${RESET}"
   log ""
-  log "Commands:"
-  log "  start     - Start Moodle Docker environment"
-  log "  stop      - Stop running containers (preserves data)"
-  log "  destroy   - Remove containers and all data"
-  log "  update    - Re-initialize test frameworks after plugin changes"
-  log "  behat     - Run Behat acceptance tests"
-  log "  phpunit   - Run PHPUnit tests"
-  log "  grunt     - Run grunt watch for JS/CSS compilation"
-  log "  xdebug    - Manage Xdebug for PHP debugging"
-  log "  upgrade   - Update the tool and moodlehq/moodle-docker"
+  log "${YELLOW}USAGE:${RESET}"
+  log "  moodle-docker <command> <version> [options] [arguments]"
   log ""
-  log "Moodle versions: dev, 50, 45, 44, 43, 42, 41, 40, 311, 310, 39"
+  log "${YELLOW}COMMANDS:${RESET}"
+  log "  ${GREEN}start${RESET}     - Start Moodle Docker environment"
+  log "  ${GREEN}stop${RESET}      - Stop running containers (preserves data)"
+  log "  ${GREEN}destroy${RESET}   - Remove containers and all data ⚠️"
+  log "  ${GREEN}update${RESET}    - Re-initialize test frameworks after plugin changes"
+  log "  ${GREEN}behat${RESET}     - Run Behat acceptance tests"
+  log "  ${GREEN}phpunit${RESET}   - Run PHPUnit tests"
+  log "  ${GREEN}grunt${RESET}     - Run grunt watch for JS/CSS compilation"
+  log "  ${GREEN}xdebug${RESET}    - Manage Xdebug for PHP debugging"
+  log "  ${GREEN}upgrade${RESET}   - Update the tool and moodlehq/moodle-docker"
+  log "  ${GREEN}help${RESET}      - Show this help message"
   log ""
-  log "Options:"
-  log "  --php=VERSION   - Override PHP version (e.g., --php=8.3)"
-  log ""
-  log "Examples:"
-  log "  $0 start 50                    # Start Moodle 5.0 with default PHP 8.2"
-  log "  $0 start 50 --php=8.3          # Start Moodle 5.0 with PHP 8.3"
-  log "  $0 behat 44 --tags=@auth       # Run Behat tests with specific tags"
-  log "  $0 behat 44 --interactive      # Run tests in interactive mode"
-  log "  $0 phpunit 45 auth/tests/       # Run PHPUnit tests for auth"
-  log "  $0 xdebug 50 install           # Install and configure Xdebug"
-  log "  $0 xdebug 50 disable           # Temporarily disable Xdebug"
+  log "${YELLOW}AVAILABLE MOODLE VERSIONS:${RESET}"
 
-  abort "-"
+  # Display versions in a formatted way
+  log "  ${CYAN}Development:${RESET}"
+  log "    • dev     - Latest development version (main branch)"
+  log ""
+  log "  ${CYAN}Stable Releases:${RESET}"
+  log "    • 50      - Moodle 5.0 (requires PHP 8.2+)"
+  log "    • 45      - Moodle 4.5 (LTS)"
+  log "    • 44      - Moodle 4.4"
+  log "    • 43      - Moodle 4.3"
+  log "    • 42      - Moodle 4.2"
+  log "    • 41      - Moodle 4.1"
+  log "    • 40      - Moodle 4.0"
+  log ""
+  log "  ${CYAN}Legacy Versions:${RESET}"
+  log "    • 311     - Moodle 3.11 (LTS)"
+  log "    • 310     - Moodle 3.10"
+  log "    • 39      - Moodle 3.9 (LTS)"
+  log ""
+  log "${YELLOW}OPTIONS:${RESET}"
+  log "  --php=VERSION     Override PHP version (e.g., --php=8.3)"
+  log "  --interactive,-i  Run Behat tests in interactive mode"
+  log ""
+  log "${YELLOW}PORT MAPPING:${RESET}"
+  log "  Each version uses predictable ports:"
+  log "  • Web:      80<version>  (e.g., 8042 for v4.2)"
+  log "  • Database: 330<version> (e.g., 33042 for v4.2)"
+  log "  • VNC:      590<version> (e.g., 59042 for v4.2)"
+  log "  • Dev uses: 8099, 33099, 59099"
+  log ""
+  log "${YELLOW}EXAMPLES:${RESET}"
+  log "  ${CYAN}# Start Moodle 5.0${RESET}"
+  log "  moodle-docker start 50"
+  log ""
+  log "  ${CYAN}# Start with specific PHP version${RESET}"
+  log "  moodle-docker start 50 --php=8.3"
+  log ""
+  log "  ${CYAN}# Run Behat tests with tags${RESET}"
+  log "  moodle-docker behat 44 --tags=@auth"
+  log ""
+  log "  ${CYAN}# Interactive Behat testing${RESET}"
+  log "  moodle-docker behat 44 -i --tags=@mytest"
+  log ""
+  log "  ${CYAN}# Run PHPUnit tests${RESET}"
+  log "  moodle-docker phpunit 45 auth/tests/"
+  log ""
+  log "  ${CYAN}# Install Xdebug${RESET}"
+  log "  moodle-docker xdebug 50 install"
+  log ""
+  log "  ${CYAN}# Start grunt watch${RESET}"
+  log "  moodle-docker grunt 42 watch"
+  log ""
+  log "${YELLOW}DEFAULT CREDENTIALS:${RESET}"
+  log "  Username: ${GREEN}admin${RESET}"
+  log "  Password: ${GREEN}test${RESET}"
+  log ""
+  log "${YELLOW}MORE INFORMATION:${RESET}"
+  log "  GitHub:  https://github.com/LdesignMedia/moodle-docker-brew"
+  log "  Issues:  https://github.com/LdesignMedia/moodle-docker-brew/issues"
+  log ""
+}
+
+# Show help if requested
+if [ "$ARG1_ACTION" == "help" ] || [ "$#" -eq 0 ]; then
+  show_help
+  exit 0
 fi
 
 if [ "$ARG1_ACTION" == "upgrade" ]; then
@@ -186,9 +245,12 @@ fi
 # Validate we can run the script.
 setup
 
-# Check if at least two argument is provided
-if [ "$#" -lt 2 ]; then
-  abort "Usage: $0 command moodleversion [arg3 arg4 ...]"
+# Check if at least two argument is provided (except for help and upgrade)
+if [ "$#" -lt 2 ] && [ "$ARG1_ACTION" != "help" ] && [ "$ARG1_ACTION" != "upgrade" ]; then
+  log "${RED}❌ Error: Missing required arguments${RESET}"
+  log ""
+  show_help
+  exit 1
 fi
 
 # Check if the provided version is in the list

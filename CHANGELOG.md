@@ -5,6 +5,20 @@ All notable changes to moodle-docker-brew will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.33] - 2025-09-27
+
+### Added
+- Comprehensive help display with formatted output and visual design
+- Help automatically shown when no arguments are provided
+- Detailed listing of all available Moodle versions organized by category
+- Port mapping information in help display
+- Examples section with common use cases
+
+### Changed
+- Enhanced help command with box drawing characters and color coding
+- Organized Moodle versions into Development, Stable, and Legacy categories
+- Improved error messages when missing required arguments
+
 ## [1.0.32] - 2025-09-27
 
 ### Added
