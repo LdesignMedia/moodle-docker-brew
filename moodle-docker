@@ -71,7 +71,7 @@ ORIGINAL_DIR=$(pwd)
 SCRIPT_DIR_MOODLE_DOCKER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # TODO compare against brew list --versions moodle-docker start upgrade if its higher than current
-PLUGIN_VERSION="1.0.29"
+PLUGIN_VERSION="1.0.30"
 
 MOODLE_LIST=$(cat $SCRIPT_DIR_MOODLE_DOCKER/moodle_VERSIONS.txt)
 VERSIONS=$(echo "$MOODLE_LIST" | awk -F'|' '{ print $1 }')
@@ -136,6 +136,7 @@ if [ "$ARG1_ACTION" == "help" ]; then
   log "  $0 start 50                    # Start Moodle 5.0 with default PHP 8.2"
   log "  $0 start 50 --php=8.3          # Start Moodle 5.0 with PHP 8.3"
   log "  $0 behat 44 --tags=@auth       # Run Behat tests with specific tags"
+  log "  $0 behat 44 --interactive      # Run tests in interactive mode"
   log "  $0 phpunit 45 auth/tests/       # Run PHPUnit tests for auth"
   log "  $0 xdebug 50 install           # Install and configure Xdebug"
   log "  $0 xdebug 50 disable           # Temporarily disable Xdebug"
@@ -416,8 +417,16 @@ if [ "$ARG1_ACTION" == "start" ]; then
   log "${GREEN}✅ Moodle $ARG2_SELECTED_VERSION is ready!${RESET}"
   log "========================================================================"
   log ""
-  log "🌐 Access your site at: ${CYAN}http://localhost:$MOODLE_DOCKER_WEB_PORT/${RESET}"
-  log "👤 Login: ${CYAN}admin / test${RESET}"
+  log "🌐 ${GREEN}Web Access:${RESET}"
+  log "  • URL: ${CYAN}http://localhost:$MOODLE_DOCKER_WEB_PORT/${RESET}"
+  log "  • Login: ${CYAN}admin / test${RESET}"
+  log ""
+  log "🖥️  ${GREEN}VNC Viewer (Watch Behat Tests):${RESET}"
+  log "  • Connect to: ${CYAN}localhost:$MOODLE_DOCKER_SELENIUM_VNC_PORT${RESET}"
+  log "  • Password: ${CYAN}secret${RESET}"
+  log "  • Download viewer: ${YELLOW}https://www.realvnc.com/download/viewer/${RESET}"
+  log ""
+  log "💡 ${YELLOW}Tip:${RESET} Use VNC to watch Behat tests run in real-time!"
   log ""
 
 # DESTROY COMMAND
@@ -483,13 +492,50 @@ elif [ "$ARG1_ACTION" == "behat" ]; then
   log "${GREEN}🧪 Running Behat Tests - Moodle $ARG2_SELECTED_VERSION${RESET}"
   log "========================================================================"
   log ""
-  log "🔧 Command: php admin/tool/behat/cli/run.php $ALL_REMAINING_ARGS"
+
+  # Check for interactive mode
+  INTERACTIVE_MODE=false
+  BEHAT_ARGS=""
+  for arg in $ALL_REMAINING_ARGS; do
+    if [[ "$arg" == "--interactive" ]] || [[ "$arg" == "-i" ]]; then
+      INTERACTIVE_MODE=true
+    else
+      BEHAT_ARGS="$BEHAT_ARGS $arg"
+    fi
+  done
+
+  # Display VNC information for watching tests
+  log "🖥️  ${GREEN}VNC Connection Information:${RESET}"
+  log "  • Host: localhost"
+  log "  • Port: ${MOODLE_DOCKER_SELENIUM_VNC_PORT}"
+  log "  • Password: secret"
+  log ""
+  log "💡 ${YELLOW}To watch tests in real-time:${RESET}"
+  log "  1. Download VNC viewer: https://www.realvnc.com/download/viewer/"
+  log "  2. Connect to: localhost:${MOODLE_DOCKER_SELENIUM_VNC_PORT}"
+  log "  3. Enter password: secret"
+  log ""
+
+  if [ "$INTERACTIVE_MODE" = true ]; then
+    log "🎮 ${CYAN}Interactive mode enabled!${RESET}"
+    log "  • Tests will pause at breakpoints (@pause tag)"
+    log "  • Press Enter in terminal to continue"
+    log ""
+    BEHAT_ARGS="$BEHAT_ARGS --verbose --stop-on-failure"
+  fi
+
+  log "🔧 Command: php admin/tool/behat/cli/run.php $BEHAT_ARGS"
   log ""
 
   cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
   check_is_running
 
-  bin/moodle-docker-compose exec -i -u www-data webserver bash -ic "php admin/tool/behat/cli/run.php $ALL_REMAINING_ARGS"
+  # Run with proper terminal interaction for pause support
+  if [ "$INTERACTIVE_MODE" = true ]; then
+    bin/moodle-docker-compose exec -it -u www-data webserver bash -ic "php admin/tool/behat/cli/run.php $BEHAT_ARGS"
+  else
+    bin/moodle-docker-compose exec -i -u www-data webserver bash -ic "php admin/tool/behat/cli/run.php $BEHAT_ARGS"
+  fi
 
 # PHPUNIT COMMAND
 # ----------------------------------------------------------------

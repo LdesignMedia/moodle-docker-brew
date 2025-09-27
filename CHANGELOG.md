@@ -43,6 +43,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added color coding for better readability
 - Improved user feedback during operations with step-by-step status updates
 
+## [1.0.30] - 2025-09-27
+
+### Added
+- Interactive Behat testing mode with `--interactive` or `-i` flag
+- Automatic pause at @pause tags for debugging scenarios
+- Prominent VNC connection information display in start command
+- Enhanced VNC information in behat command output
+- Support for verbose output and stop-on-failure in interactive mode
+
+### Changed
+- Improved Behat test output with clear VNC viewer instructions
+- Start command now prominently displays VNC connection details
+- Added tips for watching tests in real-time via VNC
+
 ## [1.0.29] - 2025-09-27
 
 ### Fixed

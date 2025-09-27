@@ -140,17 +140,73 @@ moodle-docker behat 42 --tags=@auth_manual
 moodle-docker phpunit 42 auth/manual/tests/manual_test.php
 ```
 
-## Behat Setup
+## Behat Setup & Testing
 
-- First-time init: Behat is initialized automatically the first time you run `moodle-docker start {version}`.
-- Re-initialize after changes (e.g., adding/updating plugins):
+### Initial Setup
+
+- First-time init: Behat is initialized automatically when you run `moodle-docker start {version}`
+- Re-initialize after adding/updating plugins:
 
 ```bash
 moodle-docker update {version}   # e.g., moodle-docker update 42
 ```
 
-- Verify Behat status and steps mapping in your browser: `http://localhost:80NN/admin/tool/behat/index.php` (e.g., 8042 for 4.2).
-- Run tests: `moodle-docker behat {version} [--tags=...]`.
+### Running Behat Tests
+
+```bash
+# Run all tests
+moodle-docker behat 42
+
+# Run specific tags
+moodle-docker behat 42 --tags=@auth
+
+# Run specific feature file
+moodle-docker behat 42 /path/to/test.feature
+
+# Interactive mode (pauses at breakpoints)
+moodle-docker behat 42 --interactive --tags=@mytests
+```
+
+### Watching Tests in Real-Time with VNC
+
+Connect to the Selenium container to watch tests run visually:
+
+1. **Download a VNC viewer**: [RealVNC Viewer](https://www.realvnc.com/download/viewer/)
+2. **Connect to the VNC server**:
+   - Host: `localhost`
+   - Port: `590NN` (e.g., `59042` for Moodle 4.2)
+   - Password: `secret`
+3. **Watch your tests execute** in a real browser window
+
+### Interactive Testing
+
+Add the `--interactive` or `-i` flag to enable interactive mode:
+
+```bash
+# Run tests interactively
+moodle-docker behat 42 --interactive --tags=@mytest
+
+# Tests will:
+# - Pause at @pause tags in your scenarios
+# - Stop on first failure
+# - Show verbose output
+# - Wait for Enter key to continue
+```
+
+Use `@pause` tags in your Behat scenarios to create breakpoints:
+
+```gherkin
+@mytest @pause
+Scenario: Test with a breakpoint
+    Given I am on homepage
+    When I log in as "admin"
+    Then I should see "Dashboard"  # Test will pause here if @pause is used
+```
+
+### Useful URLs
+
+- Behat test status: `http://localhost:80NN/admin/tool/behat/index.php`
+- Failed test screenshots: `http://localhost:80NN/_/faildumps/`
 
 ## Xdebug (PHP Debugging)
 
@@ -291,7 +347,7 @@ Supported Moodle versions and their download URLs are defined in `moodle_version
 - [ ] Video: configure PhpStorm for plugin testing
 - [ ] Command to stop all running instances
 - [ ] Display all running Moodle versions
-- [ ] Interactive Behat mode (pause/resume)
+- [x] ~~Interactive Behat mode (pause/resume)~~ ✅ Completed in v1.0.30
 
 ## Authors
 
