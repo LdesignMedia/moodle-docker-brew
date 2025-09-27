@@ -71,7 +71,7 @@ ORIGINAL_DIR=$(pwd)
 SCRIPT_DIR_MOODLE_DOCKER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # TODO compare against brew list --versions moodle-docker start upgrade if its higher than current
-PLUGIN_VERSION="1.0.23"
+PLUGIN_VERSION="1.0.24"
 
 MOODLE_LIST=$(cat $SCRIPT_DIR_MOODLE_DOCKER/moodle_VERSIONS.txt)
 VERSIONS=$(echo "$MOODLE_LIST" | awk -F'|' '{ print $1 }')
@@ -85,12 +85,23 @@ source "$SCRIPT_DIR_MOODLE_DOCKER/scripts/helper.sh"
 
 # Below is the alias (moodle-docker) to https://github.com/LdesignMedia/homebrew-moodle-docker/blob/main/install_moodle_docker.sh this is used for
 # installing and workarround home directory issues.
-log "Brew runner version:"
-brew list --versions moodle-docker
+# Header section
+log ""
+log "========================================================================"
+log "${GREEN}Moodle Docker Brew v$PLUGIN_VERSION${RESET}"
+log "by Ldesign Media - https://ldesignmedia.nl"
+log "========================================================================"
+log ""
+log "📁 Working directory: $SCRIPT_DIR_MOODLE_DOCKER"
+log "📖 Documentation: https://github.com/LdesignMedia/moodle-docker-brew"
+log ""
 
-log "${GREEN}Moodle docker $PLUGIN_VERSION by Ldesign Media"
-log "Running in $SCRIPT_DIR_MOODLE_DOCKER"
-log "${YELLOW}You can read the full documentation here: https://github.com/LdesignMedia/moodle-docker-brew"
+# Brew version check
+BREW_VERSION=$(brew list --versions moodle-docker 2>/dev/null || echo "not installed via brew")
+if [ "$BREW_VERSION" != "not installed via brew" ]; then
+  log "🍺 Homebrew version: $BREW_VERSION"
+  log ""
+fi
 
 if [ "$ARG1_ACTION" == "help" ]; then
   log "Usage: $0 command moodleversion [arg3 arg4 ...]"
@@ -180,10 +191,14 @@ start | update | stop | destroy | info | behat | phpunit | grunt) ;;
   ;;
 esac
 
-# LOGGING ----------------------------------------------------------------
-log "Argument remaining: $ALL_REMAINING_ARGS"
-log "${GREEN}Selected Moodle version: $ARG2_SELECTED_VERSION"
-# ----------------------------------------------------------------
+# Configuration Section
+log "------------------------------------------------------------------------"
+log "${GREEN}📋 Configuration${RESET}"
+log "------------------------------------------------------------------------"
+log "  Moodle version: ${GREEN}$ARG2_SELECTED_VERSION${RESET}"
+if [ -n "$ALL_REMAINING_ARGS" ]; then
+  log "  Extra arguments: $ALL_REMAINING_ARGS"
+fi
 
 # EXPORTS ----------------------------------------------------------------
 export COMPOSE_PROJECT_NAME="moodle${ARG2_SELECTED_VERSION}"
@@ -196,71 +211,97 @@ export MOODLE_DOCKER_WWWROOT="${SCRIPT_DIR_MOODLE_DOCKER}/moodle/${ARG2_SELECTED
 # Set PHP for older versions
 if [ "$ARG2_SELECTED_VERSION" == "39" ]; then
   export MOODLE_DOCKER_PHP_VERSION=7.4
-  log "${GREEN}Running with the PHP version: 7.4 (See: https://docs.moodle.org/402/en/PHP)"
+  log "  PHP version: ${GREEN}7.4${RESET}"
 elif [ "$ARG2_SELECTED_VERSION" -ge "44" ]; then
   export MOODLE_DOCKER_PHP_VERSION=8.1
-  log "${GREEN}Running with PHP version: 8.1"
+  log "  PHP version: ${GREEN}8.1${RESET}"
 else
-  log "${GREEN}Running with PHP version: 8.0"
+  log "  PHP version: ${GREEN}8.0${RESET}"
   export MOODLE_DOCKER_PHP_VERSION=8.0
 fi
 
-log "${YELLOW}DB port: $MOODLE_DOCKER_DB_PORT"
-log "${YELLOW}VNC port: $MOODLE_DOCKER_SELENIUM_VNC_PORT Password: secret"
-log "${YELLOW}Webserver port: $MOODLE_DOCKER_WEB_PORT"
-log "${YELLOW}Directory: $MOODLE_DOCKER_WWWROOT"
-log "${YELLOW}When running Available on: http://localhost:$MOODLE_DOCKER_WEB_PORT/"
-log "${YELLOW}Login: username: admin password: test"
-log "${YELLOW}Behat faildumps: http://localhost:$MOODLE_DOCKER_WEB_PORT/_/faildumps/"
-log "${YELLOW}Mail catcher: http://localhost:$MOODLE_DOCKER_WEB_PORT/_/mail/"
-log "${YELLOW}Acceptance testing INFO + Definitions: http://localhost:$MOODLE_DOCKER_WEB_PORT//admin/tool/behat/index.php"
+log "  Database: ${GREEN}MariaDB${RESET}"
+log "  Directory: $MOODLE_DOCKER_WWWROOT"
 log ""
-log "${YELLOW}Behat tests: https://moodledev.io/general/development/tools/behat"
-log "${YELLOW}How to write behat tests: https://moodledev.io/general/development/tools/behat/writing"
-log "${YELLOW}Behat definitions: https://behat.org/en/latest/user_guide/context/definitions.html"
+log "------------------------------------------------------------------------"
+log "${GREEN}🔌 Service Ports${RESET}"
+log "------------------------------------------------------------------------"
+log "  🌐 Web server: ${CYAN}http://localhost:$MOODLE_DOCKER_WEB_PORT/${RESET}"
+log "  🗄️  Database: ${CYAN}localhost:$MOODLE_DOCKER_DB_PORT${RESET}"
+log "  🖥️  VNC (Selenium): ${CYAN}localhost:$MOODLE_DOCKER_SELENIUM_VNC_PORT${RESET} (password: secret)"
 log ""
-log "${YELLOW}How to write unit tests: https://docs.moodle.org/dev/Writing_PHPUnit_tests"
+log "------------------------------------------------------------------------"
+log "${GREEN}🔑 Access Credentials${RESET}"
+log "------------------------------------------------------------------------"
+log "  Admin login: ${CYAN}admin / test${RESET}"
+log ""
+log "------------------------------------------------------------------------"
+log "${GREEN}🛠️  Development Tools${RESET}"
+log "------------------------------------------------------------------------"
+log "  📧 Mail catcher: ${CYAN}http://localhost:$MOODLE_DOCKER_WEB_PORT/_/mail/${RESET}"
+log "  🧪 Behat faildumps: ${CYAN}http://localhost:$MOODLE_DOCKER_WEB_PORT/_/faildumps/${RESET}"
+log "  📝 Behat definitions: ${CYAN}http://localhost:$MOODLE_DOCKER_WEB_PORT/admin/tool/behat/index.php${RESET}"
+log ""
+log "------------------------------------------------------------------------"
+log "${GREEN}📚 Documentation${RESET}"
+log "------------------------------------------------------------------------"
+log "  Behat guide: https://moodledev.io/general/development/tools/behat"
+log "  Writing tests: https://moodledev.io/general/development/tools/behat/writing"
+log "  PHPUnit tests: https://docs.moodle.org/dev/Writing_PHPUnit_tests"
+log "------------------------------------------------------------------------"
+log ""
 
 # ----------------------------------------------------------------
 
 # START COMMAND
 # ----------------------------------------------------------------
 if [ "$ARG1_ACTION" == "start" ]; then
+  log ""
+  log "========================================================================"
+  log "${GREEN}🚀 Starting Moodle $ARG2_SELECTED_VERSION${RESET}"
+  log "========================================================================"
+  log ""
 
   # Download the zip file to the moodle directory and name it using the selected_version
   zip_file="$SCRIPT_DIR_MOODLE_DOCKER/moodle/${ARG2_SELECTED_VERSION}.zip"
 
   if [ ! -f "$zip_file" ]; then
+    log "📥 Downloading Moodle $ARG2_SELECTED_VERSION..."
+    log "   Source: $download_url"
+    log ""
 
     if command -v wget >/dev/null 2>&1; then
       wget -O "$zip_file" "$download_url"
     elif command -v curl >/dev/null 2>&1; then
       curl -o "$zip_file" -L "$download_url"
     else
-      abort "Error: wget or curl is required to download the Moodle version."
+      abort "❌ Error: wget or curl is required to download the Moodle version."
     fi
 
-    log "Moodle version $ARG2_SELECTED_VERSION downloaded to: $zip_file"
+    log "${GREEN}✓${RESET} Downloaded successfully to: $zip_file"
   else
-    log "Already downloaded to: $zip_file"
+    log "${GREEN}✓${RESET} Using cached download: $zip_file"
   fi
 
   # Unzipping Moodle.
   if [ ! -f "$zip_file" ]; then
-    abort "Failed to download  $download_url"
+    abort "❌ Failed to download $download_url"
   fi
 
   if [ ! -d "$SCRIPT_DIR_MOODLE_DOCKER/moodle/${ARG2_SELECTED_VERSION}" ]; then
+    log "📦 Extracting Moodle files..."
     rm -rf "$SCRIPT_DIR_MOODLE_DOCKER/moodle/moodle"
     unzip -q "$zip_file" -d "$SCRIPT_DIR_MOODLE_DOCKER/moodle/"
     mv "$SCRIPT_DIR_MOODLE_DOCKER/moodle/moodle" "$SCRIPT_DIR_MOODLE_DOCKER/moodle/${ARG2_SELECTED_VERSION}"
 
-    log "${GREEN}Moodle directory available at ${SCRIPT_DIR_MOODLE_DOCKER}/moodle/${ARG2_SELECTED_VERSION}"
+    log "${GREEN}✓${RESET} Extracted to: ${SCRIPT_DIR_MOODLE_DOCKER}/moodle/${ARG2_SELECTED_VERSION}"
   else
-    log "${GREEN}Moodle directory available at ${SCRIPT_DIR_MOODLE_DOCKER}/moodle/${ARG2_SELECTED_VERSION}"
+    log "${GREEN}✓${RESET} Moodle directory exists: ${SCRIPT_DIR_MOODLE_DOCKER}/moodle/${ARG2_SELECTED_VERSION}"
   fi
 
-  log "$COMPOSE_PROJECT_NAME"
+  log ""
+  log "🐳 Docker Project: ${CYAN}$COMPOSE_PROJECT_NAME${RESET}"
+  log ""
 
   cp "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker/config.docker-template.php" "$MOODLE_DOCKER_WWWROOT/config.php"
   cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
@@ -272,67 +313,115 @@ if [ "$ARG1_ACTION" == "start" ]; then
 
   if [ ! -f "$MOODLE_DOCKER_WWWROOT/installed" ]; then
 
+    log "🔧 Setting up Docker containers..."
     bin/moodle-docker-compose up -d
 
-    # Wait for DB to come up (important for oracle/mssql)
+    log "⏳ Waiting for database to be ready..."
     bin/moodle-docker-wait-for-db
 
     # Flag so we don't run this more than once.
     touch "$MOODLE_DOCKER_WWWROOT/installed"
 
+    log "🗄️  Installing Moodle database..."
     bin/moodle-docker-compose exec webserver php admin/cli/install_database.php --agree-license --fullname="$COMPOSE_PROJECT_NAME" \
       --shortname="$COMPOSE_PROJECT_NAME" --summary="Docker moodle site $COMPOSE_PROJECT_NAME" --adminpass="test" --adminemail="admin@example.com"
 
-    log "Installing Moodle completed successfully"
+    log "${GREEN}✓${RESET} Moodle database installed successfully"
+    log ""
+
     # Add moodle developer tools.
+    log "🧪 Initializing test frameworks..."
 
     # Initialize behat environment.
-    log "Installing Moodle behat"
+    log "  • Setting up Behat (acceptance testing)..."
     bin/moodle-docker-compose exec webserver php admin/tool/behat/cli/init.php
+    log "${GREEN}  ✓${RESET} Behat initialized"
 
     # Initialize phpunit environment.
-    log "Installing Moodle phpunit"
-
+    log "  • Setting up PHPUnit (unit testing)..."
     bin/moodle-docker-compose exec webserver php admin/tool/phpunit/cli/init.php
+    log "${GREEN}  ✓${RESET} PHPUnit initialized"
   else
     # Restart containers
+    log "♻️  Restarting existing containers..."
     bin/moodle-docker-compose start
+    log "${GREEN}✓${RESET} Containers restarted"
   fi
 
-  log "${YELLOW}Available on: http://localhost:$MOODLE_DOCKER_WEB_PORT/"
+  log ""
+  log "========================================================================"
+  log "${GREEN}✅ Moodle $ARG2_SELECTED_VERSION is ready!${RESET}"
+  log "========================================================================"
+  log ""
+  log "🌐 Access your site at: ${CYAN}http://localhost:$MOODLE_DOCKER_WEB_PORT/${RESET}"
+  log "👤 Login: ${CYAN}admin / test${RESET}"
+  log ""
 
 # DESTROY COMMAND
 # ----------------------------------------------------------------
 elif [ "$ARG1_ACTION" == "destroy" ]; then
-  log "${MAGENTA}Destroying Moodle installation and docker containers."
+  log ""
+  log "========================================================================"
+  log "${RED}🗑️  Destroy Moodle $ARG2_SELECTED_VERSION${RESET}"
+  log "========================================================================"
+  log ""
+  log "${YELLOW}⚠️  This will permanently delete:${RESET}"
+  log "  • All Docker containers for Moodle $ARG2_SELECTED_VERSION"
+  log "  • Database and all data"
+  log "  • Moodle installation directory"
+  log "  • Downloaded zip file"
+  log ""
 
-  if confirm "Do you want to proceed?"; then
+  if confirm "${RED}Are you sure you want to proceed?${RESET}"; then
 
     # Shut down and destroy containers
     cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
 
+    log "🔄 Shutting down containers..."
     bin/moodle-docker-compose down
+    log "${GREEN}✓${RESET} Containers removed"
 
+    log "🗑️  Deleting Moodle files..."
     rm -rf "$MOODLE_DOCKER_WWWROOT"
-    rm "$SCRIPT_DIR_MOODLE_DOCKER/../moodle/$ARG2_SELECTED_VERSION.zip" >/dev/null
+    rm "$SCRIPT_DIR_MOODLE_DOCKER/../moodle/$ARG2_SELECTED_VERSION.zip" >/dev/null 2>&1
+    log "${GREEN}✓${RESET} Files deleted"
 
+    log ""
+    log "${GREEN}✅ Moodle $ARG2_SELECTED_VERSION has been completely removed.${RESET}"
+    log ""
+  else
+    log "${YELLOW}❌ Operation cancelled.${RESET}"
   fi
 
 # STOP COMMAND
 # ----------------------------------------------------------------
 elif [ "$ARG1_ACTION" == "stop" ]; then
+  log ""
+  log "========================================================================"
+  log "${YELLOW}⏹️  Stopping Moodle $ARG2_SELECTED_VERSION${RESET}"
+  log "========================================================================"
+  log ""
 
-  log "${GREEN}stopping docker containers."
   cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
   check_is_running
 
-  # Shut down and destroy containers
+  log "🔄 Stopping containers..."
   bin/moodle-docker-compose stop
+  log ""
+  log "${GREEN}✅ Moodle $ARG2_SELECTED_VERSION containers stopped.${RESET}"
+  log "${CYAN}💡 Tip: Use './moodle-docker start $ARG2_SELECTED_VERSION' to restart${RESET}"
+  log ""
 
 # BEHAT COMMAND
 # ----------------------------------------------------------------
 elif [ "$ARG1_ACTION" == "behat" ]; then
-  log "${GREEN}bin/moodle-docker-compose exec -i -u www-data webserver bash -ic php admin/tool/behat/cli/run.php $ALL_REMAINING_ARGS"
+  log ""
+  log "========================================================================"
+  log "${GREEN}🧪 Running Behat Tests - Moodle $ARG2_SELECTED_VERSION${RESET}"
+  log "========================================================================"
+  log ""
+  log "🔧 Command: php admin/tool/behat/cli/run.php $ALL_REMAINING_ARGS"
+  log ""
 
   cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
   check_is_running
@@ -342,7 +431,13 @@ elif [ "$ARG1_ACTION" == "behat" ]; then
 # PHPUNIT COMMAND
 # ----------------------------------------------------------------
 elif [ "$ARG1_ACTION" == "phpunit" ]; then
-  log "${GREEN}bin/moodle-docker-compose exec webserver vendor/bin/phpunit $ALL_REMAINING_ARGS"
+  log ""
+  log "========================================================================"
+  log "${GREEN}🧬 Running PHPUnit Tests - Moodle $ARG2_SELECTED_VERSION${RESET}"
+  log "========================================================================"
+  log ""
+  log "🔧 Command: vendor/bin/phpunit $ALL_REMAINING_ARGS"
+  log ""
 
   cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
   check_is_running
@@ -352,6 +447,12 @@ elif [ "$ARG1_ACTION" == "phpunit" ]; then
 # GRUNT COMMAND
 # ----------------------------------------------------------------
 elif [ "$ARG1_ACTION" == "grunt" ]; then
+  log ""
+  log "========================================================================"
+  log "${GREEN}🔨 Grunt Watch - Moodle $ARG2_SELECTED_VERSION${RESET}"
+  log "========================================================================"
+  log ""
+
   # Usage: moodle-docker grunt {version} [watch]
   cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
   check_is_running
@@ -362,10 +463,12 @@ elif [ "$ARG1_ACTION" == "grunt" ]; then
   fi
 
   if [ "$GRUNT_SUBCOMMAND" != "watch" ]; then
-    abort "Unknown grunt subcommand: $GRUNT_SUBCOMMAND (supported: watch)"
+    abort "❌ Unknown grunt subcommand: $GRUNT_SUBCOMMAND (supported: watch)"
   fi
 
-  log "${GREEN}Starting grunt watch inside container (this will keep the session open)."
+  log "👀 Starting grunt watch (will auto-rebuild JS/CSS on file changes)"
+  log "${YELLOW}💡 Press Ctrl+C to stop watching${RESET}"
+  log ""
 
   if [ "${MOODLE_DOCKER_GRUNT_METHOD:-dockerexec}" = "compose" ]; then
     # Run grunt watch with NVM bootstrap inside the container for www-data.

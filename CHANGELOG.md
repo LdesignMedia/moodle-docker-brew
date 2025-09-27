@@ -5,6 +5,20 @@ All notable changes to moodle-docker-brew will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.24] - 2025-09-27
+
+### Added
+- Enhanced output formatting with visual separators and emojis
+- Better structured information display with sections
+- Progress indicators for each operation step
+- Clear success/failure messages with visual feedback
+- Improved command output for start, stop, destroy, behat, phpunit, and grunt
+
+### Changed
+- Reorganized output into logical sections (Configuration, Ports, Credentials, Tools, Documentation)
+- Added color coding for better readability
+- Improved user feedback during operations with step-by-step status updates
+
 ## [1.0.23] - 2025-09-27
 
 ### Added
