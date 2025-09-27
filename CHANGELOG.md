@@ -20,9 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Moodle 4.0-4.3: PHP 8.0
   - Moodle 4.4-4.5: PHP 8.1
   - Moodle 5.0+: PHP 8.2
+- **VERIFIED**: Moodle 5.0 now runs successfully with PHP 8.2.29 in Docker container
 
 ### Changed
 - Enhanced PHP version detection logic with proper version requirements per Moodle release
+
+### Technical Notes
+- Requires pulling the `moodlehq/moodle-php-apache:8.2` Docker image for Moodle 5.0+
+- Containers must be recreated (not just restarted) when changing PHP versions
 
 ## [1.0.24] - 2025-09-27
 
@@ -38,16 +43,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added color coding for better readability
 - Improved user feedback during operations with step-by-step status updates
 
+## [1.0.29] - 2025-09-27
+
+### Fixed
+- Fixed argument parsing for xdebug and grunt subcommands after shift operations
+- Subcommands now correctly parsed from ALL_REMAINING_ARGS variable
+
+## [1.0.28] - 2025-09-27
+
+### Added
+- Xdebug support with new `xdebug` command for PHP debugging
+- Subcommands: install, enable, disable, status
+- Automatic configuration for macOS/Windows with host.docker.internal
+- IDE integration support for PHPStorm, VSCode, and other debuggers
+
+### Changed
+- Updated help command to include xdebug documentation
+
+## [1.0.27] - 2025-09-27
+
+### Added
+- Support for development version (`dev`) using latest Moodle code from main branch
+- Special port configuration for dev version: web 8099, DB 33099, VNC 59099
+
+### Changed
+- Development version automatically uses PHP 8.2
+
+## [1.0.26] - 2025-09-27
+
+### Fixed
+- Removed non-existent Moodle 5.1 and 5.2 versions (these are scheduled for future release)
+- Clarified that Moodle 5.0 is currently a development version (scheduled for April 2025)
+
+### Changed
+- Updated supported versions list to accurately reflect available versions
+
 ## [1.0.23] - 2025-09-27
 
 ### Added
-- Support for Moodle 5.0 (version code: 50)
-- Support for Moodle 5.1 (version code: 51)
-- Support for Moodle 5.2 (version code: 52)
+- Support for Moodle 5.0 development version (version code: 50)
 - CHANGELOG.md file to track version history
 
 ### Changed
 - Updated README.md to include new Moodle versions in supported versions list
+
+### Note
+- Moodle 5.0 is currently in development and scheduled for release in April 2025
+- Moodle 5.1 is scheduled for October 2025
+- Moodle 5.2 is scheduled for April 2026
 
 ## [1.0.22] - 2025
 

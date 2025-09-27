@@ -1,5 +1,4 @@
-52|https://packaging.moodle.org/stable502/moodle-latest-502.zip
-51|https://packaging.moodle.org/stable501/moodle-latest-501.zip
+dev|https://packaging.moodle.org/moodle/moodle-latest.zip
 50|https://packaging.moodle.org/stable500/moodle-latest-500.zip
 45|https://packaging.moodle.org/stable405/moodle-latest-405.zip
 44|https://packaging.moodle.org/stable404/moodle-latest-404.zip

@@ -71,7 +71,7 @@ ORIGINAL_DIR=$(pwd)
 SCRIPT_DIR_MOODLE_DOCKER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # TODO compare against brew list --versions moodle-docker start upgrade if its higher than current
-PLUGIN_VERSION="1.0.25"
+PLUGIN_VERSION="1.0.29"
 
 MOODLE_LIST=$(cat $SCRIPT_DIR_MOODLE_DOCKER/moodle_VERSIONS.txt)
 VERSIONS=$(echo "$MOODLE_LIST" | awk -F'|' '{ print $1 }')
@@ -124,9 +124,10 @@ if [ "$ARG1_ACTION" == "help" ]; then
   log "  behat     - Run Behat acceptance tests"
   log "  phpunit   - Run PHPUnit tests"
   log "  grunt     - Run grunt watch for JS/CSS compilation"
+  log "  xdebug    - Manage Xdebug for PHP debugging"
   log "  upgrade   - Update the tool and moodlehq/moodle-docker"
   log ""
-  log "Moodle versions: 52, 51, 50, 45, 44, 43, 42, 41, 40, 311, 310, 39"
+  log "Moodle versions: dev, 50, 45, 44, 43, 42, 41, 40, 311, 310, 39"
   log ""
   log "Options:"
   log "  --php=VERSION   - Override PHP version (e.g., --php=8.3)"
@@ -136,6 +137,8 @@ if [ "$ARG1_ACTION" == "help" ]; then
   log "  $0 start 50 --php=8.3          # Start Moodle 5.0 with PHP 8.3"
   log "  $0 behat 44 --tags=@auth       # Run Behat tests with specific tags"
   log "  $0 phpunit 45 auth/tests/       # Run PHPUnit tests for auth"
+  log "  $0 xdebug 50 install           # Install and configure Xdebug"
+  log "  $0 xdebug 50 disable           # Temporarily disable Xdebug"
 
   abort "-"
 fi
@@ -213,9 +216,9 @@ ALL_REMAINING_ARGS="$@"
 
 # Validate the first argument
 case "$ARG1_ACTION" in
-start | update | stop | destroy | info | behat | phpunit | grunt) ;;
+start | update | stop | destroy | info | behat | phpunit | grunt | xdebug) ;;
 *)
-  abort "Error: Invalid first argument. Allowed values are: start, update, stop, destroy, behat, phpunit, upgrade, grunt."
+  abort "Error: Invalid first argument. Allowed values are: start, update, stop, destroy, behat, phpunit, upgrade, grunt, xdebug."
   ;;
 esac
 
@@ -231,9 +234,18 @@ fi
 # EXPORTS ----------------------------------------------------------------
 export COMPOSE_PROJECT_NAME="moodle${ARG2_SELECTED_VERSION}"
 export MOODLE_DOCKER_DB=mariadb
-export MOODLE_DOCKER_DB_PORT="330${ARG2_SELECTED_VERSION}"
-export MOODLE_DOCKER_SELENIUM_VNC_PORT="590${ARG2_SELECTED_VERSION}"
-export MOODLE_DOCKER_WEB_PORT="80${ARG2_SELECTED_VERSION}"
+
+# Handle special case for 'dev' version ports
+if [ "$ARG2_SELECTED_VERSION" == "dev" ]; then
+  export MOODLE_DOCKER_DB_PORT="33099"
+  export MOODLE_DOCKER_SELENIUM_VNC_PORT="59099"
+  export MOODLE_DOCKER_WEB_PORT="8099"
+else
+  export MOODLE_DOCKER_DB_PORT="330${ARG2_SELECTED_VERSION}"
+  export MOODLE_DOCKER_SELENIUM_VNC_PORT="590${ARG2_SELECTED_VERSION}"
+  export MOODLE_DOCKER_WEB_PORT="80${ARG2_SELECTED_VERSION}"
+fi
+
 export MOODLE_DOCKER_WWWROOT="${SCRIPT_DIR_MOODLE_DOCKER}/moodle/${ARG2_SELECTED_VERSION}"
 
 # Determine PHP version based on Moodle version or manual override
@@ -241,6 +253,10 @@ if [ -n "$MANUAL_PHP_VERSION" ]; then
   # Use manually specified PHP version
   export MOODLE_DOCKER_PHP_VERSION="$MANUAL_PHP_VERSION"
   log "  PHP version: ${GREEN}${MANUAL_PHP_VERSION}${RESET} ${YELLOW}(manually set)${RESET}"
+elif [ "$ARG2_SELECTED_VERSION" == "dev" ]; then
+  # Development version uses latest PHP
+  export MOODLE_DOCKER_PHP_VERSION=8.2
+  log "  PHP version: ${GREEN}8.2${RESET} ${YELLOW}(development)${RESET}"
 elif [ "$ARG2_SELECTED_VERSION" == "39" ]; then
   # Moodle 3.9 requires PHP 7.4
   export MOODLE_DOCKER_PHP_VERSION=7.4
@@ -257,7 +273,7 @@ elif [ "$ARG2_SELECTED_VERSION" == "44" ] || [ "$ARG2_SELECTED_VERSION" == "45" 
   # Moodle 4.4-4.5 requires PHP 8.1 minimum
   export MOODLE_DOCKER_PHP_VERSION=8.1
   log "  PHP version: ${GREEN}8.1${RESET}"
-elif [ "$ARG2_SELECTED_VERSION" -ge "50" ]; then
+elif [[ "$ARG2_SELECTED_VERSION" =~ ^[0-9]+$ ]] && [ "$ARG2_SELECTED_VERSION" -ge "50" ]; then
   # Moodle 5.0+ requires PHP 8.2 minimum
   export MOODLE_DOCKER_PHP_VERSION=8.2
   log "  PHP version: ${GREEN}8.2${RESET}"
@@ -504,7 +520,8 @@ elif [ "$ARG1_ACTION" == "grunt" ]; then
   cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
   check_is_running
 
-  GRUNT_SUBCOMMAND="$3"
+  # Get subcommand from remaining args
+  GRUNT_SUBCOMMAND="${ALL_REMAINING_ARGS%% *}"
   if [ -z "$GRUNT_SUBCOMMAND" ]; then
     GRUNT_SUBCOMMAND="watch"
   fi
@@ -596,6 +613,99 @@ elif [ "$ARG1_ACTION" == "grunt" ]; then
     # Run the script with proper TTY allocation
     docker exec -it -u www-data "$container_name" bash -lc '/tmp/grunt_watch_inside_container.sh'
   fi
+
+# XDEBUG COMMAND
+# ----------------------------------------------------------------
+elif [ "$ARG1_ACTION" == "xdebug" ]; then
+
+  # Check for subcommand - get first word from remaining args
+  XDEBUG_SUBCOMMAND="${ALL_REMAINING_ARGS%% *}"
+  if [ -z "$XDEBUG_SUBCOMMAND" ]; then
+    XDEBUG_SUBCOMMAND="status"
+  fi
+
+  log ""
+  log "========================================================================"
+  log "${GREEN}🐞 Xdebug Management - Moodle $ARG2_SELECTED_VERSION${RESET}"
+  log "========================================================================"
+  log ""
+
+  cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
+  check_is_running
+
+  case "$XDEBUG_SUBCOMMAND" in
+    install)
+      log "📦 Installing Xdebug..."
+      bin/moodle-docker-compose exec webserver pecl install xdebug
+
+      log "⚙️  Configuring Xdebug..."
+      read -r -d '' conf <<'EOF'
+; Settings for Xdebug Docker configuration
+xdebug.mode = debug
+xdebug.client_host = host.docker.internal
+xdebug.client_port = 9003
+xdebug.start_with_request = yes
+xdebug.log_level = 0
+; Uncomment for specific IDE key if needed
+; xdebug.idekey=PHPSTORM
+EOF
+      bin/moodle-docker-compose exec webserver bash -c "echo '$conf' >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini"
+
+      log "✅ Enabling Xdebug extension..."
+      bin/moodle-docker-compose exec webserver docker-php-ext-enable xdebug
+      bin/moodle-docker-compose restart webserver
+
+      log ""
+      log "${GREEN}✅ Xdebug installed and enabled!${RESET}"
+      log ""
+      log "📝 Configuration:"
+      log "  • Mode: debug"
+      log "  • Client host: host.docker.internal"
+      log "  • Port: 9003"
+      log ""
+      log "${YELLOW}💡 Configure your IDE to listen on port 9003${RESET}"
+      log "${YELLOW}💡 For Linux users: You may need to use 'localhost' or your host IP instead of 'host.docker.internal'${RESET}"
+      ;;
+
+    enable)
+      log "✅ Enabling Xdebug..."
+      bin/moodle-docker-compose exec webserver sed -i 's/^; zend_extension=/zend_extension=/' /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini 2>/dev/null
+      bin/moodle-docker-compose restart webserver
+      log "${GREEN}✓${RESET} Xdebug enabled"
+      ;;
+
+    disable)
+      log "⏸️  Disabling Xdebug..."
+      bin/moodle-docker-compose exec webserver sed -i 's/^zend_extension=/; zend_extension=/' /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini 2>/dev/null
+      bin/moodle-docker-compose restart webserver
+      log "${GREEN}✓${RESET} Xdebug disabled"
+      ;;
+
+    status)
+      log "🔍 Checking Xdebug status..."
+      XDEBUG_STATUS=$(bin/moodle-docker-compose exec webserver php -r "echo extension_loaded('xdebug') ? 'installed and enabled' : 'not installed or disabled';" 2>/dev/null || echo "not installed")
+      log "  Status: ${GREEN}$XDEBUG_STATUS${RESET}"
+
+      if [[ "$XDEBUG_STATUS" == *"enabled"* ]]; then
+        log ""
+        log "📋 Current configuration:"
+        bin/moodle-docker-compose exec webserver php -i 2>/dev/null | grep -E "^xdebug\." | head -10
+      fi
+      ;;
+
+    *)
+      log "${RED}❌ Unknown subcommand: $XDEBUG_SUBCOMMAND${RESET}"
+      log ""
+      log "Usage: moodle-docker xdebug {version} [install|enable|disable|status]"
+      log ""
+      log "Commands:"
+      log "  install  - Install and configure Xdebug"
+      log "  enable   - Enable Xdebug if already installed"
+      log "  disable  - Disable Xdebug temporarily"
+      log "  status   - Check Xdebug status (default)"
+      exit 1
+      ;;
+  esac
 
 # UPDATE COMMAND
 # ----------------------------------------------------------------

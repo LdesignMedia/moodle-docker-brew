@@ -11,8 +11,9 @@ Homebrew-installable helper for running MoodleHQ’s official `moodle-docker` st
 - Built-in runners for `behat` and `phpunit`
 - Safety checks before doing destructive actions
 - Persistent data under `~/moodle-docker-brew/moodle` (when installed via Homebrew)
-- Supported versions: 5.2, 5.1, 5.0, 4.5, 4.4, 4.3, 4.2, 4.1, 4.0, 3.11, 3.10, 3.9
+- Supported versions: dev (latest), 5.0 (pre-release), 4.5, 4.4, 4.3, 4.2, 4.1, 4.0, 3.11, 3.10, 3.9
 - Port convention per version: web `80NN`, DB `330NN`, VNC `590NN` (e.g., 8042/33042/59042 for 4.2)
+- Development version uses special ports: web `8099`, DB `33099`, VNC `59099`
 - Default admin credentials: `admin` / `test`
 
 ## Requirements
@@ -48,8 +49,15 @@ cd moodle-docker-brew
 # Start Moodle 4.2 (downloads Moodle, creates DB, launches containers)
 moodle-docker start 42
 
+# Start with a specific PHP version
+moodle-docker start 42 --php=8.2
+
+# Or try the latest development version
+moodle-docker start dev
+
 # Open your browser
-open http://localhost:8042/
+open http://localhost:8042/  # For version 4.2
+open http://localhost:8099/  # For dev version
 
 # Stop containers (keeps data)
 moodle-docker stop 42
@@ -111,12 +119,13 @@ moodle-docker phpunit 42 path/to/tests
 
 ```bash
 moodle-docker help                      # Usage and examples
-moodle-docker start   {version}         # Start (e.g., 45, 44, 43, 42, 41, 40, 311, 310, 39)
+moodle-docker start   {version}         # Start (e.g., dev, 50, 45, 44, 43, 42, 41, 40, 311, 310, 39)
 moodle-docker stop    {version}         # Stop containers (preserves data)
 moodle-docker destroy {version}         # Stop and remove containers + data
 moodle-docker update  {version}         # Re-init Behat + PHPUnit (after adding plugins)
 moodle-docker behat   {version} [...]   # Run Behat in the container
 moodle-docker phpunit {version} [...]   # Run PHPUnit in the container
+moodle-docker xdebug  {version} [cmd]   # Manage Xdebug (install/enable/disable/status)
 moodle-docker upgrade                   # Update this tool + upstream moodlehq/moodle-docker
 moodle-docker grunt   {version} [watch] # Run grunt watch (JS/CSS builder)
 ```
@@ -142,6 +151,38 @@ moodle-docker update {version}   # e.g., moodle-docker update 42
 
 - Verify Behat status and steps mapping in your browser: `http://localhost:80NN/admin/tool/behat/index.php` (e.g., 8042 for 4.2).
 - Run tests: `moodle-docker behat {version} [--tags=...]`.
+
+## Xdebug (PHP Debugging)
+
+Enable step-by-step debugging for PHP development:
+
+```bash
+# Install and configure Xdebug for Moodle 4.2
+moodle-docker xdebug 42 install
+
+# Check Xdebug status
+moodle-docker xdebug 42 status
+
+# Temporarily disable Xdebug (improves performance when not debugging)
+moodle-docker xdebug 42 disable
+
+# Re-enable Xdebug
+moodle-docker xdebug 42 enable
+```
+
+### IDE Configuration
+
+1. Configure your IDE to listen on port 9003
+2. Set path mappings:
+   - Local: `/path/to/moodle-docker-brew/moodle/42`
+   - Remote: `/var/www/html`
+3. For PHPStorm/VSCode, you may need to set an IDE key in the Xdebug config
+
+### Notes
+
+- Xdebug uses `host.docker.internal` on macOS/Windows
+- Linux users may need to use `localhost` or the host IP
+- Performance is slower with Xdebug enabled - disable when not debugging
 
 ## Grunt (JS/CSS Build)
 
@@ -178,11 +219,34 @@ VNC viewer example: download [RealVNC Viewer](https://www.realvnc.com/en/connect
 
 ## PHP Versions
 
-- 3.9 → PHP 7.4
-- 4.4 and newer → PHP 8.1
-- 4.0–4.3 → PHP 8.0
+### Default PHP Versions
 
-These versions are selected automatically; manual selection is not currently supported.
+Each Moodle version automatically uses the appropriate PHP version:
+
+- Moodle 3.9 → PHP 7.4
+- Moodle 3.10-3.11 → PHP 8.0
+- Moodle 4.0-4.3 → PHP 8.0
+- Moodle 4.4-4.5 → PHP 8.1
+- Moodle 5.0+ → PHP 8.2
+- Development (dev) → PHP 8.2
+
+### Manual PHP Version Override
+
+You can override the default PHP version using the `--php` flag:
+
+```bash
+# Start Moodle 5.0 with PHP 8.3 instead of default 8.2
+moodle-docker start 50 --php=8.3
+
+# Start Moodle 4.4 with PHP 8.2 instead of default 8.1
+moodle-docker start 44 --php=8.2
+
+# Test your plugin with different PHP versions
+moodle-docker start 45 --php=7.4  # Test backward compatibility
+moodle-docker start 45 --php=8.3  # Test forward compatibility
+```
+
+**Note**: The specified PHP version must be available as a Docker image (`moodlehq/moodle-php-apache:VERSION`). Common versions include: 7.4, 8.0, 8.1, 8.2, 8.3
 
 ## Upgrade
 
@@ -225,10 +289,8 @@ Supported Moodle versions and their download URLs are defined in `moodle_version
 
 - [ ] Add developer/commander tools
 - [ ] Video: configure PhpStorm for plugin testing
-- [ ] Xdebug settings
 - [ ] Command to stop all running instances
 - [ ] Display all running Moodle versions
-- [ ] Option to install specific PHP versions
 - [ ] Interactive Behat mode (pause/resume)
 
 ## Authors
