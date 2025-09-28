@@ -400,17 +400,14 @@ Supported Moodle versions and their download URLs are defined in `moodle_version
 ### Database & Data Management
 - [ ] Add `moodle-docker db <version> [import|export|reset]` for database operations
 - [ ] Database backup/restore functionality
-- [ ] Add `moodle-docker snapshot <version>` to save current state
-- [ ] Add `moodle-docker restore <version> <snapshot>` to restore from snapshot
-- [ ] Command to clone one instance to another version
+- [ ] Upgrade to a higher Moodle version 
+- [ ] Easy swithing to another PHP version
 
 ### Development Tools
 - [ ] Add `moodle-docker composer <version>` for running composer commands
 - [ ] Add `moodle-docker npm <version>` for running npm commands
 - [ ] Add `moodle-docker moosh <version>` integration for Moosh commands
-- [ ] Add `moodle-docker lint <version> [plugin_path]` for code style checking
 - [ ] Add `moodle-docker codechecker <version> [plugin_path]` for Moodle code checker
-- [ ] PHPStan/Psalm integration for static analysis
 - [ ] Add `moodle-docker profile <version>` for XHProf profiling
 
 ### Plugin Management
@@ -418,14 +415,10 @@ Supported Moodle versions and their download URLs are defined in `moodle_version
 - [ ] Add `moodle-docker plugin list <version>` to show installed plugins
 - [ ] Add `moodle-docker plugin remove <version> <plugin_name>`
 - [ ] Plugin development scaffolding (`moodle-docker plugin create <version> <type> <name>`)
-- [ ] Automatic plugin dependency resolution
 
 ### Testing Enhancements
 - [ ] Add `moodle-docker test <version> --all` to run all tests (Behat + PHPUnit)
 - [ ] Parallel test execution support
-- [ ] Test coverage reports generation
-- [ ] Add `moodle-docker test-watch <version>` for continuous testing
-- [ ] Integration with CI/CD pipelines (GitHub Actions templates)
 - [ ] Performance testing tools integration
 
 ### User & Configuration Management
@@ -433,7 +426,6 @@ Supported Moodle versions and their download URLs are defined in `moodle_version
 - [ ] Add `moodle-docker config <version> get|set <key> [value]` for config management
 - [ ] Add `moodle-docker admin <version>` to open admin interface directly
 - [ ] Language pack installation command
-- [ ] Theme switching command
 
 ### Monitoring & Debugging
 - [ ] Add `moodle-docker monitor <version>` for real-time performance monitoring
@@ -443,9 +435,6 @@ Supported Moodle versions and their download URLs are defined in `moodle_version
 - [ ] Integration with browser developer tools
 
 ### Container Management
-- [ ] Resource limit configuration (CPU, memory)
-- [ ] Custom network configuration support
-- [ ] Volume management commands
 - [ ] Health check status display
 - [ ] Auto-cleanup of unused containers/images
 
@@ -454,26 +443,17 @@ Supported Moodle versions and their download URLs are defined in `moodle_version
 - [ ] Video: debugging with Xdebug and PHPStorm
 - [ ] Interactive setup wizard for first-time users
 - [ ] Command autocomplete for bash/zsh
-- [ ] Progress bars for long-running operations
 - [ ] Better error messages with suggested fixes
 - [ ] Add `moodle-docker doctor` for system diagnostics
 
 ### Integration Features
-- [ ] VS Code extension for moodle-docker commands
 - [ ] PHPStorm plugin for moodle-docker integration
 - [ ] Git hooks integration for pre-commit testing
-- [ ] Slack/Discord notifications for long-running tasks
 - [ ] Integration with Moodle Mobile app development
 
 ### Advanced Features
-- [ ] Multi-site setup support (multiple Moodle instances in one container)
-- [ ] Kubernetes deployment generation
-- [ ] Production-like environment simulation
 - [ ] Load testing tools integration
-- [ ] SSL/HTTPS support with self-signed certificates
-- [ ] Custom domain support (e.g., moodle42.local)
 - [ ] Redis/Memcached cache backends
-- [ ] ElasticSearch integration for global search
 
 ### Platform Support
 - [ ] Linux compatibility testing and documentation
