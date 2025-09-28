@@ -99,7 +99,7 @@ source "$SCRIPT_DIR_MOODLE_DOCKER/scripts/helper.sh"
 # ----------------------------------------------------------------
 
 # List of valid commands
-VALID_COMMANDS="start stop destroy init update behat phpunit grunt xdebug cron task export import upgrade help"
+VALID_COMMANDS="start stop destroy init behat phpunit grunt xdebug cron task export import upgrade help"
 
 # Function to check if argument is a valid command
 is_valid_command() {
@@ -205,7 +205,7 @@ show_help() {
   log "  ${GREEN}stop${RESET}      - Stop running containers (preserves data)"
   log "  ${GREEN}destroy${RESET}   - Remove containers and all data ⚠️"
   log "  ${GREEN}init${RESET}      - Re-initialize test databases (Behat & PHPUnit)"
-  log "  ${GREEN}update${RESET}    - Re-initialize test frameworks after plugin changes"
+  log "  ${GREEN}init${RESET}      - Re-initialize test frameworks after plugin changes"
   log "  ${GREEN}behat${RESET}     - Run Behat acceptance tests"
   log "  ${GREEN}phpunit${RESET}   - Run PHPUnit tests"
   log "  ${GREEN}grunt${RESET}     - Run grunt watch for JS/CSS compilation"
@@ -536,9 +536,9 @@ if [ "$#" -lt 2 ] && [ "$ARG1_ACTION" != "help" ] && [ "$ARG1_ACTION" != "upgrad
       log "Usage: ${CYAN}moodle-docker init <version>${RESET}"
       log "Example: ${GREEN}moodle-docker init 45${RESET}"
       ;;
-    update)
-      log "Usage: ${CYAN}moodle-docker update <version>${RESET}"
-      log "Example: ${GREEN}moodle-docker update 45${RESET}"
+    init)
+      log "Usage: ${CYAN}moodle-docker init <version>${RESET}"
+      log "Example: ${GREEN}moodle-docker init 45${RESET}"
       ;;
     *)
       log "Usage: ${CYAN}moodle-docker <command> <version> [options]${RESET}"
@@ -636,7 +636,7 @@ ALL_REMAINING_ARGS="$@"
 
 # Validate the first argument (this is a secondary check, primary check happens earlier)
 case "$ARG1_ACTION" in
-start | update | stop | destroy | info | behat | phpunit | grunt | xdebug | cron | task | export | import | init)
+start | stop | destroy | info | behat | phpunit | grunt | xdebug | cron | task | export | import | init)
   # Valid command, continue
   ;;
 *)
@@ -648,7 +648,7 @@ start | update | stop | destroy | info | behat | phpunit | grunt | xdebug | cron
   log "  • ${GREEN}stop${RESET}      - Stop running containers"
   log "  • ${GREEN}destroy${RESET}   - Remove containers and all data"
   log "  • ${GREEN}init${RESET}      - Re-initialize test databases"
-  log "  • ${GREEN}update${RESET}    - Re-initialize test frameworks"
+  log "  • ${GREEN}init${RESET}      - Re-initialize test frameworks"
   log "  • ${GREEN}behat${RESET}     - Run Behat tests"
   log "  • ${GREEN}phpunit${RESET}   - Run PHPUnit tests"
   log "  • ${GREEN}grunt${RESET}     - Run grunt watch"
@@ -1373,7 +1373,7 @@ elif [ "$ARG1_ACTION" == "init" ]; then
 
 # UPDATE COMMAND
 # ----------------------------------------------------------------
-elif [ "$ARG1_ACTION" == "update" ]; then
+elif [ "$ARG1_ACTION" == "init" ]; then
 
   log "${GREEN}Updating container behat + unit tests init again."
   cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
@@ -2137,7 +2137,7 @@ elif [ "$ARG1_ACTION" == "import" ]; then
   log "  Login: ${CYAN}admin / test${RESET}"
   log ""
   log "${YELLOW}Note: Some paths and settings may need manual adjustment.${RESET}"
-  log "${YELLOW}Run 'moodle-docker update ${ARG2_SELECTED_VERSION}' if you added new plugins.${RESET}"
+  log "${YELLOW}Run 'moodle-docker init ${ARG2_SELECTED_VERSION}' if you added new plugins.${RESET}"
 
 else
   log "Unknown command $ARG1_ACTION"

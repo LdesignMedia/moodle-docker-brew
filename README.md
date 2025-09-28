@@ -122,7 +122,7 @@ moodle-docker help                      # Usage and examples
 moodle-docker start   {version}         # Start (e.g., dev, 50, 45, 44, 43, 42, 41, 40, 311, 310, 39)
 moodle-docker stop    {version}         # Stop containers (preserves data)
 moodle-docker destroy {version}         # Stop and remove containers + data
-moodle-docker update  {version}         # Re-init Behat + PHPUnit (after adding plugins)
+moodle-docker init    {version}         # Re-init Behat + PHPUnit (after adding plugins)
 moodle-docker behat   {version} [...]   # Run Behat in the container
 moodle-docker phpunit {version} [...]   # Run PHPUnit in the container
 moodle-docker xdebug  {version} [cmd]   # Manage Xdebug (install/enable/disable/status)
@@ -148,7 +148,7 @@ moodle-docker phpunit 42 auth/manual/tests/manual_test.php
 - Re-initialize after adding/updating plugins:
 
 ```bash
-moodle-docker update {version}   # e.g., moodle-docker update 42
+moodle-docker init {version}     # e.g., moodle-docker init 42
 ```
 
 ### Running Behat Tests
