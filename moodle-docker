@@ -71,7 +71,7 @@ ORIGINAL_DIR=$(pwd)
 SCRIPT_DIR_MOODLE_DOCKER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # TODO compare against brew list --versions moodle-docker start upgrade if its higher than current
-PLUGIN_VERSION="1.0.35"
+PLUGIN_VERSION="1.0.36"
 
 MOODLE_LIST=$(cat $SCRIPT_DIR_MOODLE_DOCKER/moodle_VERSIONS.txt)
 VERSIONS=$(echo "$MOODLE_LIST" | awk -F'|' '{ print $1 }')
@@ -89,9 +89,87 @@ for arg in "$@"; do
     ALL_REMAINING_ARGS="${ALL_REMAINING_ARGS//--php=$MANUAL_PHP_VERSION/}"
   fi
 done
+
 # ----------------------------------------------------------------
 
 source "$SCRIPT_DIR_MOODLE_DOCKER/scripts/helper.sh"
+
+# ----------------------------------------------------------------
+# ARGUMENT VALIDATION - Check for common mistakes early
+# ----------------------------------------------------------------
+
+# List of valid commands
+VALID_COMMANDS="start stop destroy init update behat phpunit grunt xdebug cron task upgrade help"
+
+# Function to check if argument is a valid command
+is_valid_command() {
+  for cmd in $VALID_COMMANDS; do
+    if [ "$1" == "$cmd" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Function to check if argument looks like a version
+looks_like_version() {
+  # Check if it matches version patterns: numbers, dev, or wp prefix
+  if [[ "$1" =~ ^[0-9]+$ ]] || [ "$1" == "dev" ] || [[ "$1" =~ ^wp[0-9]+$ ]]; then
+    return 0
+  fi
+  return 1
+}
+
+# Detect if arguments are swapped
+if [ "$#" -ge 2 ]; then
+  # Check if first arg looks like a version and second like a command
+  if looks_like_version "$1" && is_valid_command "$2"; then
+    log ""
+    log "${RED}❌ Error: Arguments appear to be in wrong order!${RESET}"
+    log ""
+    log "  You entered: ${YELLOW}moodle-docker $1 $2${RESET}"
+    log "  Correct format: ${GREEN}moodle-docker $2 $1${RESET}"
+    log ""
+    log "The correct syntax is: ${CYAN}moodle-docker <command> <version> [options]${RESET}"
+    log ""
+    log "Example: ${GREEN}moodle-docker start 45${RESET}"
+    log ""
+    exit 1
+  fi
+
+  # Check if first argument is neither a valid command nor looks like help/upgrade
+  if [ "$1" != "help" ] && [ "$1" != "upgrade" ] && ! is_valid_command "$1"; then
+    # Check if it might be a typo of a command
+    SUGGESTIONS=""
+    for cmd in $VALID_COMMANDS; do
+      # Check for similar starting letters (at least 1 character match)
+      if [ -n "$1" ] && [[ "$cmd" == "${1:0:1}"* ]]; then
+        SUGGESTIONS="$SUGGESTIONS $cmd"
+      fi
+      # Also check if the command contains the typed string
+      if [ -n "$1" ] && [[ "$cmd" == *"$1"* ]]; then
+        if [[ "$SUGGESTIONS" != *"$cmd"* ]]; then
+          SUGGESTIONS="$SUGGESTIONS $cmd"
+        fi
+      fi
+    done
+
+    log ""
+    log "${RED}❌ Error: Invalid command '${1}'${RESET}"
+    log ""
+    log "Valid commands are: ${GREEN}$VALID_COMMANDS${RESET}"
+    if [ -n "$SUGGESTIONS" ]; then
+      log ""
+      log "Did you mean: ${CYAN}$SUGGESTIONS${RESET}?"
+    fi
+    log ""
+    log "Use ${CYAN}moodle-docker help${RESET} for usage information"
+    log ""
+    exit 1
+  fi
+fi
+
+# ----------------------------------------------------------------
 
 # Below is the alias (moodle-docker) to https://github.com/LdesignMedia/homebrew-moodle-docker/blob/main/install_moodle_docker.sh this is used for
 # installing and workarround home directory issues.
@@ -131,6 +209,8 @@ show_help() {
   log "  ${GREEN}behat${RESET}     - Run Behat acceptance tests"
   log "  ${GREEN}phpunit${RESET}   - Run PHPUnit tests"
   log "  ${GREEN}grunt${RESET}     - Run grunt watch for JS/CSS compilation"
+  log "  ${GREEN}cron${RESET}      - Run Moodle cron (once or continuously)"
+  log "  ${GREEN}task${RESET}      - Manage and run scheduled tasks"
   log "  ${GREEN}xdebug${RESET}    - Manage Xdebug for PHP debugging"
   log "  ${GREEN}upgrade${RESET}   - Update the tool and moodlehq/moodle-docker"
   log "  ${GREEN}help${RESET}      - Show this help message"
@@ -201,6 +281,21 @@ show_help() {
   log ""
   log "  ${CYAN}# Start grunt watch${RESET}"
   log "  moodle-docker grunt 42 watch"
+  log ""
+  log "  ${CYAN}# Run cron once${RESET}"
+  log "  moodle-docker cron 45"
+  log ""
+  log "  ${CYAN}# Run cron continuously (development)${RESET}"
+  log "  moodle-docker cron 45 watch"
+  log ""
+  log "  ${CYAN}# List all scheduled tasks${RESET}"
+  log "  moodle-docker task 45 list"
+  log ""
+  log "  ${CYAN}# Run a task interactively${RESET}"
+  log "  moodle-docker task 45 select"
+  log ""
+  log "  ${CYAN}# Run task #3 directly${RESET}"
+  log "  moodle-docker task 45 select 3"
   log ""
   log "${YELLOW}DEFAULT CREDENTIALS:${RESET}"
   log "  Username: ${GREEN}admin${RESET}"
@@ -374,9 +469,70 @@ setup
 
 # Check if at least two argument is provided (except for help and upgrade)
 if [ "$#" -lt 2 ] && [ "$ARG1_ACTION" != "help" ] && [ "$ARG1_ACTION" != "upgrade" ]; then
-  log "${RED}❌ Error: Missing required arguments${RESET}"
   log ""
-  show_help
+  log "${RED}❌ Error: Missing required version argument${RESET}"
+  log ""
+
+  # Provide specific guidance based on the command
+  case "$ARG1_ACTION" in
+    start)
+      log "Usage: ${CYAN}moodle-docker start <version>${RESET}"
+      log "Example: ${GREEN}moodle-docker start 45${RESET}"
+      ;;
+    stop)
+      log "Usage: ${CYAN}moodle-docker stop <version>${RESET}"
+      log "Example: ${GREEN}moodle-docker stop 45${RESET}"
+      ;;
+    destroy)
+      log "Usage: ${CYAN}moodle-docker destroy <version>${RESET}"
+      log "Example: ${GREEN}moodle-docker destroy 45${RESET}"
+      ;;
+    behat)
+      log "Usage: ${CYAN}moodle-docker behat <version> [options]${RESET}"
+      log "Example: ${GREEN}moodle-docker behat 45 --tags=@auth${RESET}"
+      ;;
+    phpunit)
+      log "Usage: ${CYAN}moodle-docker phpunit <version> [test_path]${RESET}"
+      log "Example: ${GREEN}moodle-docker phpunit 45 auth/tests/${RESET}"
+      ;;
+    grunt)
+      log "Usage: ${CYAN}moodle-docker grunt <version> [watch]${RESET}"
+      log "Example: ${GREEN}moodle-docker grunt 45 watch${RESET}"
+      ;;
+    xdebug)
+      log "Usage: ${CYAN}moodle-docker xdebug <version> [command]${RESET}"
+      log "Example: ${GREEN}moodle-docker xdebug 45 install${RESET}"
+      ;;
+    cron)
+      log "Usage: ${CYAN}moodle-docker cron <version> [mode]${RESET}"
+      log "Example: ${GREEN}moodle-docker cron 45${RESET}"
+      log "Example: ${GREEN}moodle-docker cron 45 watch${RESET}"
+      ;;
+    task)
+      log "Usage: ${CYAN}moodle-docker task <version> [mode] [task_class]${RESET}"
+      log "Example: ${GREEN}moodle-docker task 45 list${RESET}"
+      log "Example: ${GREEN}moodle-docker task 45 select${RESET}"
+      log "Example: ${GREEN}moodle-docker task 45 run \\\\core\\\\task\\\\session_cleanup_task${RESET}"
+      ;;
+    init)
+      log "Usage: ${CYAN}moodle-docker init <version>${RESET}"
+      log "Example: ${GREEN}moodle-docker init 45${RESET}"
+      ;;
+    update)
+      log "Usage: ${CYAN}moodle-docker update <version>${RESET}"
+      log "Example: ${GREEN}moodle-docker update 45${RESET}"
+      ;;
+    *)
+      log "Usage: ${CYAN}moodle-docker <command> <version> [options]${RESET}"
+      ;;
+  esac
+
+  log ""
+  log "Available versions: ${GREEN}50, 45, 44, 43, 42, 41, 40, 311, 310, 39, dev${RESET}"
+  log "Workplace versions: ${GREEN}wp50, wp45, wp44, wp43, wp42${RESET}"
+  log ""
+  log "Use ${CYAN}moodle-docker help${RESET} for full documentation"
+  log ""
   exit 1
 fi
 
@@ -389,7 +545,63 @@ for version in $VERSIONS; do
 done
 
 if [ ! $VERSION_FOUND -eq 1 ]; then
-  abort "The provided version $ARG2_SELECTED_VERSION is not in the Moodle version list."
+  log ""
+  log "${RED}❌ Error: Version '$ARG2_SELECTED_VERSION' is not available${RESET}"
+  log ""
+
+  # Check if it might be a typo or wrong format
+  SUGGESTIONS=""
+
+  # Check for common mistakes
+  if [[ "$ARG2_SELECTED_VERSION" =~ ^4\.[0-9]$ ]]; then
+    # User entered 4.5 instead of 45
+    SUGGESTED_VERSION="${ARG2_SELECTED_VERSION//./}"
+    for version in $VERSIONS; do
+      if [ "$version" == "$SUGGESTED_VERSION" ]; then
+        SUGGESTIONS="$SUGGESTED_VERSION"
+        break
+      fi
+    done
+    if [ -n "$SUGGESTIONS" ]; then
+      log "${YELLOW}Did you mean: ${GREEN}$SUGGESTIONS${RESET}? (without the dot)"
+    fi
+  elif [[ "$ARG2_SELECTED_VERSION" =~ ^v[0-9]+$ ]]; then
+    # User added 'v' prefix like v45
+    SUGGESTED_VERSION="${ARG2_SELECTED_VERSION#v}"
+    for version in $VERSIONS; do
+      if [ "$version" == "$SUGGESTED_VERSION" ]; then
+        SUGGESTIONS="$SUGGESTED_VERSION"
+        break
+      fi
+    done
+    if [ -n "$SUGGESTIONS" ]; then
+      log "${YELLOW}Did you mean: ${GREEN}$SUGGESTIONS${RESET}? (without the 'v' prefix)"
+    fi
+  elif [[ "$ARG2_SELECTED_VERSION" == "workplace"* ]] || [[ "$ARG2_SELECTED_VERSION" == "mwp"* ]]; then
+    # User typed workplace instead of wp
+    log "${YELLOW}For Moodle Workplace, use format: ${GREEN}wp45, wp44, wp43${RESET}, etc."
+  else
+    # Show available versions close to what was entered
+    for version in $VERSIONS; do
+      if [[ "$version" == "${ARG2_SELECTED_VERSION:0:2}"* ]]; then
+        SUGGESTIONS="$SUGGESTIONS $version"
+      fi
+    done
+    if [ -n "$SUGGESTIONS" ]; then
+      log "${YELLOW}Similar versions available:${GREEN}$SUGGESTIONS${RESET}"
+    fi
+  fi
+
+  log ""
+  log "${CYAN}Available versions:${RESET}"
+  log "  • Stable: ${GREEN}50, 45, 44, 43, 42, 41, 40${RESET}"
+  log "  • Legacy: ${GREEN}311, 310, 39${RESET}"
+  log "  • Development: ${GREEN}dev${RESET}"
+  log "  • Workplace: ${GREEN}wp50, wp45, wp44, wp43, wp42${RESET}"
+  log ""
+  log "Use ${CYAN}moodle-docker help${RESET} for more information"
+  log ""
+  exit 1
 fi
 
 # Get the corresponding download URL
@@ -404,11 +616,31 @@ shift
 shift
 ALL_REMAINING_ARGS="$@"
 
-# Validate the first argument
+# Validate the first argument (this is a secondary check, primary check happens earlier)
 case "$ARG1_ACTION" in
-start | update | stop | destroy | info | behat | phpunit | grunt | xdebug | init) ;;
+start | update | stop | destroy | info | behat | phpunit | grunt | xdebug | cron | task | init)
+  # Valid command, continue
+  ;;
 *)
-  abort "Error: Invalid first argument. Allowed values are: start, update, stop, destroy, behat, phpunit, init, upgrade, grunt, xdebug."
+  log ""
+  log "${RED}❌ Error: Invalid command '${ARG1_ACTION}'${RESET}"
+  log ""
+  log "Valid commands are:"
+  log "  • ${GREEN}start${RESET}     - Start Moodle Docker environment"
+  log "  • ${GREEN}stop${RESET}      - Stop running containers"
+  log "  • ${GREEN}destroy${RESET}   - Remove containers and all data"
+  log "  • ${GREEN}init${RESET}      - Re-initialize test databases"
+  log "  • ${GREEN}update${RESET}    - Re-initialize test frameworks"
+  log "  • ${GREEN}behat${RESET}     - Run Behat tests"
+  log "  • ${GREEN}phpunit${RESET}   - Run PHPUnit tests"
+  log "  • ${GREEN}grunt${RESET}     - Run grunt watch"
+  log "  • ${GREEN}cron${RESET}      - Run Moodle cron"
+  log "  • ${GREEN}task${RESET}      - Run scheduled tasks"
+  log "  • ${GREEN}xdebug${RESET}    - Manage Xdebug"
+  log ""
+  log "Use ${CYAN}moodle-docker help${RESET} for detailed usage"
+  log ""
+  exit 1
   ;;
 esac
 
@@ -1134,6 +1366,313 @@ elif [ "$ARG1_ACTION" == "update" ]; then
   # Initialize phpunit environment.
   log "Installing Moodle phpunit"
   bin/moodle-docker-compose exec webserver php admin/tool/phpunit/cli/init.php
+
+# CRON COMMAND
+# ----------------------------------------------------------------
+elif [ "$ARG1_ACTION" == "cron" ]; then
+  log ""
+  log "========================================================================"
+  log "${GREEN}⏰ Running Moodle Cron - Moodle $ARG2_SELECTED_VERSION${RESET}"
+  log "========================================================================"
+  log ""
+
+  cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
+  check_is_running
+
+  # Check for subcommand - get first word from remaining args
+  CRON_MODE="${ALL_REMAINING_ARGS%% *}"
+  if [ -z "$CRON_MODE" ] || [ "$CRON_MODE" == "once" ]; then
+    # Run cron once
+    log "🔄 Running cron once..."
+    log ""
+    log "${YELLOW}Command: php admin/cli/cron.php${RESET}"
+    log ""
+    log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    bin/moodle-docker-compose exec webserver php admin/cli/cron.php
+    log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    log ""
+    log "${GREEN}✅ Cron run completed${RESET}"
+
+  elif [ "$CRON_MODE" == "watch" ] || [ "$CRON_MODE" == "continuous" ]; then
+    # Run cron continuously
+    log "🔄 Running cron continuously (every 60 seconds)..."
+    log "${YELLOW}Press Ctrl+C to stop${RESET}"
+    log ""
+    log "${CYAN}Note: In production, cron should run via system crontab.${RESET}"
+    log "${CYAN}This continuous mode is for development/debugging only.${RESET}"
+    log ""
+    log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    # Trap SIGINT (Ctrl+C) to ensure clean exit
+    trap 'echo ""; log "${YELLOW}Stopping cron watch...${RESET}"; exit 0' INT TERM
+
+    while true; do
+      log ""
+      log "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] Starting cron run...${RESET}"
+      log "────────────────────────────────────────────────────────────────"
+      bin/moodle-docker-compose exec webserver php admin/cli/cron.php
+      log "────────────────────────────────────────────────────────────────"
+      log "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] Cron run completed. Waiting 60 seconds...${RESET}"
+      sleep 60
+    done
+
+  elif [ "$CRON_MODE" == "scheduled" ]; then
+    # Show scheduled tasks
+    log "📅 Showing scheduled tasks..."
+    log ""
+    bin/moodle-docker-compose exec webserver php admin/cli/scheduled_task.php --list
+    log ""
+    log "${CYAN}To run a specific task, use:${RESET}"
+    log "${GREEN}moodle-docker task ${ARG2_SELECTED_VERSION} run \\\\path\\\\to\\\\task${RESET}"
+
+  else
+    log "${RED}❌ Unknown cron mode: $CRON_MODE${RESET}"
+    log ""
+    log "Usage: moodle-docker cron {version} [mode]"
+    log ""
+    log "Modes:"
+    log "  ${GREEN}once${RESET}       - Run cron once (default)"
+    log "  ${GREEN}watch${RESET}      - Run cron continuously every 60 seconds"
+    log "  ${GREEN}continuous${RESET} - Same as 'watch'"
+    log "  ${GREEN}scheduled${RESET}  - List scheduled tasks (use 'task' command for more options)"
+    log ""
+    log "Examples:"
+    log "  ${CYAN}moodle-docker cron 45${RESET}         # Run cron once"
+    log "  ${CYAN}moodle-docker cron 45 watch${RESET}   # Run continuously"
+    log "  ${CYAN}moodle-docker cron 45 scheduled${RESET} # List scheduled tasks"
+  fi
+
+# TASK COMMAND
+# ----------------------------------------------------------------
+elif [ "$ARG1_ACTION" == "task" ]; then
+  log ""
+  log "========================================================================"
+  log "${GREEN}📋 Scheduled Task Management - Moodle $ARG2_SELECTED_VERSION${RESET}"
+  log "========================================================================"
+  log ""
+
+  cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
+  check_is_running
+
+  # Get the subcommand
+  TASK_MODE="${1:-list}"
+  shift || true
+  TASK_ARGS="$@"
+
+  case "$TASK_MODE" in
+    list)
+      # List all scheduled tasks
+      log "📅 Available scheduled tasks:"
+      log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      log ""
+
+      # Get the list with better formatting
+      TASK_OUTPUT=$(bin/moodle-docker-compose exec webserver php admin/cli/scheduled_task.php --list 2>/dev/null)
+
+      if [ -n "$TASK_OUTPUT" ]; then
+        echo "$TASK_OUTPUT" | while IFS= read -r line; do
+          # Highlight task paths in green
+          if [[ "$line" == *"\\"* ]]; then
+            # Extract the task class name
+            TASK_CLASS=$(echo "$line" | grep -oE '\\[^[:space:]]+' | head -1)
+            if [ -n "$TASK_CLASS" ]; then
+              # Format the output nicely
+              FORMATTED_LINE=$(echo "$line" | sed "s|$TASK_CLASS|${GREEN}$TASK_CLASS${RESET}|")
+              log "$FORMATTED_LINE"
+            else
+              log "$line"
+            fi
+          else
+            log "$line"
+          fi
+        done
+      else
+        log "${YELLOW}No tasks found or unable to retrieve task list.${RESET}"
+      fi
+
+      log ""
+      log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      log ""
+      log "${CYAN}To run a specific task:${RESET}"
+      log "  ${GREEN}moodle-docker task ${ARG2_SELECTED_VERSION} run \\\\full\\\\class\\\\name${RESET}"
+      log ""
+      log "${CYAN}To select a task interactively:${RESET}"
+      log "  ${GREEN}moodle-docker task ${ARG2_SELECTED_VERSION} select${RESET}       # Interactive menu"
+      log "  ${GREEN}moodle-docker task ${ARG2_SELECTED_VERSION} select 5${RESET}     # Run task #5 directly"
+      ;;
+
+    select)
+      # Interactive task selection - check if a number was provided
+      PRESELECTED_NUMBER=""
+      if [ -n "$TASK_ARGS" ]; then
+        # Check if the argument is a number
+        if [[ "$TASK_ARGS" =~ ^[0-9]+$ ]]; then
+          PRESELECTED_NUMBER="$TASK_ARGS"
+          log "🔍 Using task number: $PRESELECTED_NUMBER"
+        else
+          log "${RED}❌ Error: Invalid selection number '$TASK_ARGS'${RESET}"
+          log ""
+          log "Usage: moodle-docker task ${ARG2_SELECTED_VERSION} select [number]"
+          log ""
+          log "Examples:"
+          log "  ${GREEN}moodle-docker task ${ARG2_SELECTED_VERSION} select${RESET}      # Interactive selection"
+          log "  ${GREEN}moodle-docker task ${ARG2_SELECTED_VERSION} select 5${RESET}    # Run task #5 directly"
+          exit 1
+        fi
+      else
+        log "🔍 Loading available tasks..."
+      fi
+      log ""
+
+      # Get task list and create an array
+      TASKS_RAW=$(bin/moodle-docker-compose exec webserver php admin/cli/scheduled_task.php --list 2>/dev/null | grep '\\' | grep -oE '\\[^[:space:]]+' | sort -u)
+
+      if [ -z "$TASKS_RAW" ]; then
+        log "${RED}❌ No tasks found or unable to retrieve task list.${RESET}"
+        exit 1
+      fi
+
+      # Convert to array
+      IFS=$'\n' read -d '' -ra TASKS_ARRAY <<< "$TASKS_RAW" || true
+
+      # If number was pre-selected, validate it
+      if [ -n "$PRESELECTED_NUMBER" ]; then
+        if [ "$PRESELECTED_NUMBER" -ge 1 ] && [ "$PRESELECTED_NUMBER" -le "${#TASKS_ARRAY[@]}" ]; then
+          SELECTION="$PRESELECTED_NUMBER"
+          SELECTED_TASK="${TASKS_ARRAY[$((SELECTION-1))]}"
+
+          # Show what task will be run
+          DISPLAY_NAME=$(echo "$SELECTED_TASK" | sed 's/\\/\//g' | awk -F'/' '{print $NF}')
+          log "📋 Selected task #$SELECTION: ${GREEN}$DISPLAY_NAME${RESET}"
+          log "   Full path: ${CYAN}$SELECTED_TASK${RESET}"
+          log ""
+        else
+          log "${RED}❌ Error: Task number $PRESELECTED_NUMBER is out of range (1-${#TASKS_ARRAY[@]})${RESET}"
+          log ""
+          log "Use 'moodle-docker task ${ARG2_SELECTED_VERSION} list' to see available tasks"
+          exit 1
+        fi
+      else
+        # Display tasks with numbers for interactive selection
+        log "${CYAN}Available tasks:${RESET}"
+        log "────────────────────────────────────────────────────────────────"
+
+        INDEX=1
+        for task in "${TASKS_ARRAY[@]}"; do
+          # Make the display more readable by showing just the class name
+          DISPLAY_NAME=$(echo "$task" | sed 's/\\/\//g' | awk -F'/' '{print $NF}')
+          printf "[%2d] %-30s %s\n" "$INDEX" "$DISPLAY_NAME" "${CYAN}$task${RESET}"
+          ((INDEX++))
+        done
+
+        log "────────────────────────────────────────────────────────────────"
+        log ""
+        log "${CYAN}Tip: You can run a task directly with: moodle-docker task ${ARG2_SELECTED_VERSION} select <number>${RESET}"
+        log ""
+
+        # Prompt for selection
+        while true; do
+          read -p "Select a task number (1-${#TASKS_ARRAY[@]}) or 'q' to quit: " SELECTION
+
+          if [ "$SELECTION" == "q" ] || [ "$SELECTION" == "Q" ]; then
+            log "${YELLOW}Task selection cancelled.${RESET}"
+            exit 0
+          fi
+
+          if [[ "$SELECTION" =~ ^[0-9]+$ ]] && [ "$SELECTION" -ge 1 ] && [ "$SELECTION" -le "${#TASKS_ARRAY[@]}" ]; then
+            SELECTED_TASK="${TASKS_ARRAY[$((SELECTION-1))]}"
+            break
+          else
+            log "${RED}Invalid selection. Please enter a number between 1 and ${#TASKS_ARRAY[@]}.${RESET}"
+          fi
+        done
+      fi
+
+      # Run the selected task
+      log ""
+      log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      log "${GREEN}Running task: $SELECTED_TASK${RESET}"
+      log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      log ""
+
+      bin/moodle-docker-compose exec webserver php admin/cli/scheduled_task.php --execute="$SELECTED_TASK"
+
+      log ""
+      log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      log "${GREEN}✅ Task completed: $SELECTED_TASK${RESET}"
+      log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      ;;
+
+    run|execute)
+      # Run a specific task
+      if [ -z "$TASK_ARGS" ]; then
+        log "${RED}❌ Error: Task class name required${RESET}"
+        log ""
+        log "Usage: moodle-docker task ${ARG2_SELECTED_VERSION} run \\\\full\\\\class\\\\name"
+        log ""
+        log "Example:"
+        log "  ${GREEN}moodle-docker task ${ARG2_SELECTED_VERSION} run \\\\core\\\\task\\\\session_cleanup_task${RESET}"
+        log ""
+        log "To see available tasks:"
+        log "  ${GREEN}moodle-docker task ${ARG2_SELECTED_VERSION} list${RESET}"
+        exit 1
+      fi
+
+      TASK_CLASS="$TASK_ARGS"
+
+      log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      log "${GREEN}Running task: $TASK_CLASS${RESET}"
+      log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      log ""
+
+      bin/moodle-docker-compose exec webserver php admin/cli/scheduled_task.php --execute="$TASK_CLASS"
+
+      RESULT=$?
+      log ""
+
+      if [ $RESULT -eq 0 ]; then
+        log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        log "${GREEN}✅ Task completed successfully${RESET}"
+        log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      else
+        log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        log "${RED}❌ Task failed or class not found${RESET}"
+        log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        log ""
+        log "${YELLOW}Tips:${RESET}"
+        log "  • Make sure the task class exists"
+        log "  • Use double backslashes: \\\\core\\\\task\\\\session_cleanup_task"
+        log "  • Run 'moodle-docker task ${ARG2_SELECTED_VERSION} list' to see available tasks"
+      fi
+      ;;
+
+    *)
+      log "${RED}❌ Unknown task mode: $TASK_MODE${RESET}"
+      log ""
+      log "Usage: moodle-docker task {version} [mode] [arguments]"
+      log ""
+      log "Modes:"
+      log "  ${GREEN}list${RESET}        - List all available scheduled tasks (default)"
+      log "  ${GREEN}select${RESET}      - Interactive task selection and execution"
+      log "  ${GREEN}select N${RESET}    - Run task number N directly (e.g., select 5)"
+      log "  ${GREEN}run${RESET}         - Run a specific task by class name"
+      log "  ${GREEN}execute${RESET}     - Same as 'run'"
+      log ""
+      log "Examples:"
+      log "  ${CYAN}# List all tasks${RESET}"
+      log "  moodle-docker task ${ARG2_SELECTED_VERSION}"
+      log ""
+      log "  ${CYAN}# Interactive selection${RESET}"
+      log "  moodle-docker task ${ARG2_SELECTED_VERSION} select"
+      log ""
+      log "  ${CYAN}# Run task #5 directly${RESET}"
+      log "  moodle-docker task ${ARG2_SELECTED_VERSION} select 5"
+      log ""
+      log "  ${CYAN}# Run specific task by class${RESET}"
+      log "  moodle-docker task ${ARG2_SELECTED_VERSION} run \\\\core\\\\task\\\\session_cleanup_task"
+      exit 1
+      ;;
+  esac
 
 else
   log "Unknown command $ARG1_ACTION"

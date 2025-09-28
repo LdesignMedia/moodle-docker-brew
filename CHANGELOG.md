@@ -5,6 +5,41 @@ All notable changes to moodle-docker-brew will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.36] - 2025-09-28
+
+### Added
+- **New `cron` command** for running Moodle cron jobs
+  - `moodle-docker cron <version>` - Run cron once
+  - `moodle-docker cron <version> watch` - Run cron continuously (every 60 seconds)
+  - `moodle-docker cron <version> scheduled` - List scheduled tasks
+  - Live output with timestamps for debugging
+  - Clean exit handling with Ctrl+C for watch mode
+
+- **New `task` command** for managing scheduled tasks
+  - `moodle-docker task <version> list` - List all available scheduled tasks
+  - `moodle-docker task <version> select` - Interactive task selection menu
+  - `moodle-docker task <version> select <number>` - Run task by number directly (e.g., select 5)
+  - `moodle-docker task <version> run <class>` - Run specific task by class name
+  - Color-coded output with task highlighting
+  - Numbered task list for easy selection
+  - Full error handling and validation
+
+- **Enhanced error handling** to prevent wrong argument usage
+  - Detection of swapped arguments (e.g., `moodle-docker 45 start` shows correct format)
+  - Improved command typo suggestions (e.g., 'tsk' suggests 'task')
+  - Version format validation (detects 4.5 vs 45, v45 vs 45)
+  - Context-specific usage examples for missing arguments
+  - Clear, color-coded error messages
+
+### Changed
+- Improved help documentation with examples for all new commands
+- Better command suggestion algorithm that checks both starting letters and substring matches
+- Updated cron scheduled mode to reference the new task command
+
+### Fixed
+- Trap command syntax for proper signal handling in cron watch mode
+- Command validation order to ensure proper error messages
+
 ## [1.0.35] - 2025-09-27
 
 ### Added
