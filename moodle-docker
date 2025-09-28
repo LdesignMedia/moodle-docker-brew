@@ -1968,7 +1968,7 @@ elif [ "$ARG1_ACTION" == "import" ]; then
     if confirm "Create backup of existing instance before import?"; then
       log "  Creating backup..."
       BACKUP_NAME="backup-before-import-$(date +%Y%m%d-%H%M%S)"
-      ./moodle-docker export "$ARG2_SELECTED_VERSION" "$BACKUP_NAME"
+      "$0" export "$ARG2_SELECTED_VERSION" "$BACKUP_NAME"
       log "  ${GREEN}✓${RESET} Backup created: ${BACKUP_NAME}.tar.gz"
     fi
 
@@ -2052,7 +2052,7 @@ elif [ "$ARG1_ACTION" == "import" ]; then
     # First check if dump already contains CREATE DATABASE statement
     if grep -q "^CREATE DATABASE" "${TEMP_IMPORT_DIR}/database.sql" 2>/dev/null; then
       # Database dump contains CREATE DATABASE, use it as-is
-      if docker exec "$DB_CONTAINER" sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < "${TEMP_IMPORT_DIR}/database.sql" 2>"${TEMP_IMPORT_DIR}/db_import_error.log"; then
+      if docker exec -i "$DB_CONTAINER" sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < "${TEMP_IMPORT_DIR}/database.sql" 2>"${TEMP_IMPORT_DIR}/db_import_error.log"; then
         log "  ${GREEN}✓${RESET} Database imported successfully"
       else
         log "  ${RED}✗${RESET} Database import failed"
@@ -2064,7 +2064,7 @@ elif [ "$ARG1_ACTION" == "import" ]; then
       fi
     else
       # Database dump doesn't contain CREATE DATABASE, import into moodle database
-      if docker exec "$DB_CONTAINER" sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" moodle' < "${TEMP_IMPORT_DIR}/database.sql" 2>"${TEMP_IMPORT_DIR}/db_import_error.log"; then
+      if docker exec -i "$DB_CONTAINER" sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" moodle' < "${TEMP_IMPORT_DIR}/database.sql" 2>"${TEMP_IMPORT_DIR}/db_import_error.log"; then
         log "  ${GREEN}✓${RESET} Database imported successfully"
       else
         log "  ${RED}✗${RESET} Database import failed"
