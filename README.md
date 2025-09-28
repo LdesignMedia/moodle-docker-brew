@@ -388,10 +388,98 @@ Supported Moodle versions and their download URLs are defined in `moodle_version
 
 ## To‑Do
 
+### Core Features
 - [ ] Add developer/commander tools
+- [ ] Command to stop all running instances (`moodle-docker stop-all`)
+- [ ] Display all running Moodle versions (`moodle-docker status`)
+- [ ] Add `moodle-docker restart <version>` command
+- [ ] Add `moodle-docker logs <version> [--follow]` for viewing container logs
+- [ ] Add `moodle-docker exec <version> <command>` for running arbitrary commands
+- [ ] Support for custom PHP versions override globally (not just per command)
+
+### Database & Data Management
+- [ ] Add `moodle-docker db <version> [import|export|reset]` for database operations
+- [ ] Database backup/restore functionality
+- [ ] Add `moodle-docker snapshot <version>` to save current state
+- [ ] Add `moodle-docker restore <version> <snapshot>` to restore from snapshot
+- [ ] Command to clone one instance to another version
+
+### Development Tools
+- [ ] Add `moodle-docker composer <version>` for running composer commands
+- [ ] Add `moodle-docker npm <version>` for running npm commands
+- [ ] Add `moodle-docker moosh <version>` integration for Moosh commands
+- [ ] Add `moodle-docker lint <version> [plugin_path]` for code style checking
+- [ ] Add `moodle-docker codechecker <version> [plugin_path]` for Moodle code checker
+- [ ] PHPStan/Psalm integration for static analysis
+- [ ] Add `moodle-docker profile <version>` for XHProf profiling
+
+### Plugin Management
+- [ ] Add `moodle-docker plugin install <version> <plugin_name>` from Moodle plugins directory
+- [ ] Add `moodle-docker plugin list <version>` to show installed plugins
+- [ ] Add `moodle-docker plugin remove <version> <plugin_name>`
+- [ ] Plugin development scaffolding (`moodle-docker plugin create <version> <type> <name>`)
+- [ ] Automatic plugin dependency resolution
+
+### Testing Enhancements
+- [ ] Add `moodle-docker test <version> --all` to run all tests (Behat + PHPUnit)
+- [ ] Parallel test execution support
+- [ ] Test coverage reports generation
+- [ ] Add `moodle-docker test-watch <version>` for continuous testing
+- [ ] Integration with CI/CD pipelines (GitHub Actions templates)
+- [ ] Performance testing tools integration
+
+### User & Configuration Management
+- [ ] Add `moodle-docker user <version> create|list|delete` for user management
+- [ ] Add `moodle-docker config <version> get|set <key> [value]` for config management
+- [ ] Add `moodle-docker admin <version>` to open admin interface directly
+- [ ] Language pack installation command
+- [ ] Theme switching command
+
+### Monitoring & Debugging
+- [ ] Add `moodle-docker monitor <version>` for real-time performance monitoring
+- [ ] Add `moodle-docker debug <version> [on|off]` to toggle debug mode
+- [ ] Email testing interface (`moodle-docker mail <version>`)
+- [ ] Add `moodle-docker profiler <version>` for performance profiling
+- [ ] Integration with browser developer tools
+
+### Container Management
+- [ ] Resource limit configuration (CPU, memory)
+- [ ] Custom network configuration support
+- [ ] Volume management commands
+- [ ] Health check status display
+- [ ] Auto-cleanup of unused containers/images
+
+### Documentation & UX
 - [ ] Video: configure PhpStorm for plugin testing
-- [ ] Command to stop all running instances
-- [ ] Display all running Moodle versions
+- [ ] Video: debugging with Xdebug and PHPStorm
+- [ ] Interactive setup wizard for first-time users
+- [ ] Command autocomplete for bash/zsh
+- [ ] Progress bars for long-running operations
+- [ ] Better error messages with suggested fixes
+- [ ] Add `moodle-docker doctor` for system diagnostics
+
+### Integration Features
+- [ ] VS Code extension for moodle-docker commands
+- [ ] PHPStorm plugin for moodle-docker integration
+- [ ] Git hooks integration for pre-commit testing
+- [ ] Slack/Discord notifications for long-running tasks
+- [ ] Integration with Moodle Mobile app development
+
+### Advanced Features
+- [ ] Multi-site setup support (multiple Moodle instances in one container)
+- [ ] Kubernetes deployment generation
+- [ ] Production-like environment simulation
+- [ ] Load testing tools integration
+- [ ] SSL/HTTPS support with self-signed certificates
+- [ ] Custom domain support (e.g., moodle42.local)
+- [ ] Redis/Memcached cache backends
+- [ ] ElasticSearch integration for global search
+
+### Platform Support
+- [ ] Linux compatibility testing and documentation
+- [ ] Windows WSL2 support and documentation
+- [ ] ARM64 (Apple Silicon) optimization
+- [ ] Docker Desktop alternative support documentation
 
 ## Authors
 

@@ -5,9 +5,22 @@ All notable changes to moodle-docker-brew will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.36] - 2025-09-28
+## [1.1.0] - 2025-09-28
 
 ### Added
+- **New `export` and `import` commands** for complete environment sharing
+  - `moodle-docker export <version>` - Export complete Moodle environment (database, files, moodledata)
+  - `moodle-docker import <version> <file>` - Import and restore complete environment
+  - Includes database dump, all Moodle files, and moodledata directory
+  - Automatic compression with tar.gz for efficient storage
+  - Metadata tracking (version, PHP, export date, ports)
+  - Checksum validation for integrity verification
+  - Automatic backup option before import
+  - Progress indicators with file size information
+  - Smart exclusion of cache/temp files to reduce export size
+  - Automatic path and URL updates on import
+  - Version mismatch warnings with confirmation prompt
+
 - **New `cron` command** for running Moodle cron jobs
   - `moodle-docker cron <version>` - Run cron once
   - `moodle-docker cron <version> watch` - Run cron continuously (every 60 seconds)
@@ -32,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Clear, color-coded error messages
 
 ### Changed
+- Version bumped to 1.1.0 due to major feature additions
 - Improved help documentation with examples for all new commands
 - Better command suggestion algorithm that checks both starting letters and substring matches
 - Updated cron scheduled mode to reference the new task command
@@ -39,6 +53,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Trap command syntax for proper signal handling in cron watch mode
 - Command validation order to ensure proper error messages
+
+## [1.0.36] - 2025-09-28 (Unreleased)
+*Version skipped - features merged into 1.1.0*
 
 ## [1.0.35] - 2025-09-27
 

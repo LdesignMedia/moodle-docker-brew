@@ -71,7 +71,7 @@ ORIGINAL_DIR=$(pwd)
 SCRIPT_DIR_MOODLE_DOCKER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # TODO compare against brew list --versions moodle-docker start upgrade if its higher than current
-PLUGIN_VERSION="1.0.36"
+PLUGIN_VERSION="1.1.0"
 
 MOODLE_LIST=$(cat $SCRIPT_DIR_MOODLE_DOCKER/moodle_VERSIONS.txt)
 VERSIONS=$(echo "$MOODLE_LIST" | awk -F'|' '{ print $1 }')
@@ -99,7 +99,7 @@ source "$SCRIPT_DIR_MOODLE_DOCKER/scripts/helper.sh"
 # ----------------------------------------------------------------
 
 # List of valid commands
-VALID_COMMANDS="start stop destroy init update behat phpunit grunt xdebug cron task upgrade help"
+VALID_COMMANDS="start stop destroy init update behat phpunit grunt xdebug cron task export import upgrade help"
 
 # Function to check if argument is a valid command
 is_valid_command() {
@@ -211,6 +211,8 @@ show_help() {
   log "  ${GREEN}grunt${RESET}     - Run grunt watch for JS/CSS compilation"
   log "  ${GREEN}cron${RESET}      - Run Moodle cron (once or continuously)"
   log "  ${GREEN}task${RESET}      - Manage and run scheduled tasks"
+  log "  ${GREEN}export${RESET}    - Export complete Moodle environment for sharing"
+  log "  ${GREEN}import${RESET}    - Import Moodle environment from export file"
   log "  ${GREEN}xdebug${RESET}    - Manage Xdebug for PHP debugging"
   log "  ${GREEN}upgrade${RESET}   - Update the tool and moodlehq/moodle-docker"
   log "  ${GREEN}help${RESET}      - Show this help message"
@@ -296,6 +298,12 @@ show_help() {
   log ""
   log "  ${CYAN}# Run task #3 directly${RESET}"
   log "  moodle-docker task 45 select 3"
+  log ""
+  log "  ${CYAN}# Export complete environment${RESET}"
+  log "  moodle-docker export 45"
+  log ""
+  log "  ${CYAN}# Import environment from export${RESET}"
+  log "  moodle-docker import 45 moodle-45-export.tar.gz"
   log ""
   log "${YELLOW}DEFAULT CREDENTIALS:${RESET}"
   log "  Username: ${GREEN}admin${RESET}"
@@ -514,6 +522,16 @@ if [ "$#" -lt 2 ] && [ "$ARG1_ACTION" != "help" ] && [ "$ARG1_ACTION" != "upgrad
       log "Example: ${GREEN}moodle-docker task 45 select${RESET}"
       log "Example: ${GREEN}moodle-docker task 45 run \\\\core\\\\task\\\\session_cleanup_task${RESET}"
       ;;
+    export)
+      log "Usage: ${CYAN}moodle-docker export <version> [export_name]${RESET}"
+      log "Example: ${GREEN}moodle-docker export 45${RESET}"
+      log "Example: ${GREEN}moodle-docker export 45 my-project-backup${RESET}"
+      ;;
+    import)
+      log "Usage: ${CYAN}moodle-docker import <version> <export_file>${RESET}"
+      log "Example: ${GREEN}moodle-docker import 45 moodle-45-export.tar.gz${RESET}"
+      log "Example: ${GREEN}moodle-docker import 45 /path/to/export.tar.gz${RESET}"
+      ;;
     init)
       log "Usage: ${CYAN}moodle-docker init <version>${RESET}"
       log "Example: ${GREEN}moodle-docker init 45${RESET}"
@@ -618,7 +636,7 @@ ALL_REMAINING_ARGS="$@"
 
 # Validate the first argument (this is a secondary check, primary check happens earlier)
 case "$ARG1_ACTION" in
-start | update | stop | destroy | info | behat | phpunit | grunt | xdebug | cron | task | init)
+start | update | stop | destroy | info | behat | phpunit | grunt | xdebug | cron | task | export | import | init)
   # Valid command, continue
   ;;
 *)
@@ -636,6 +654,8 @@ start | update | stop | destroy | info | behat | phpunit | grunt | xdebug | cron
   log "  • ${GREEN}grunt${RESET}     - Run grunt watch"
   log "  • ${GREEN}cron${RESET}      - Run Moodle cron"
   log "  • ${GREEN}task${RESET}      - Run scheduled tasks"
+  log "  • ${GREEN}export${RESET}    - Export environment"
+  log "  • ${GREEN}import${RESET}    - Import environment"
   log "  • ${GREEN}xdebug${RESET}    - Manage Xdebug"
   log ""
   log "Use ${CYAN}moodle-docker help${RESET} for detailed usage"
@@ -1673,6 +1693,451 @@ elif [ "$ARG1_ACTION" == "task" ]; then
       exit 1
       ;;
   esac
+
+# EXPORT COMMAND
+# ----------------------------------------------------------------
+elif [ "$ARG1_ACTION" == "export" ]; then
+  log ""
+  log "========================================================================"
+  log "${GREEN}📦 Exporting Moodle $ARG2_SELECTED_VERSION Environment${RESET}"
+  log "========================================================================"
+  log ""
+
+  cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
+  check_is_running
+
+  # Get export filename or use default
+  EXPORT_NAME="${1:-moodle-${ARG2_SELECTED_VERSION}-export-$(date +%Y%m%d-%H%M%S)}"
+  EXPORT_FILE="${SCRIPT_DIR_MOODLE_DOCKER}/exports/${EXPORT_NAME}.tar.gz"
+  EXPORT_DIR="${SCRIPT_DIR_MOODLE_DOCKER}/exports"
+  TEMP_EXPORT_DIR="${EXPORT_DIR}/temp-${EXPORT_NAME}"
+
+  # Create export directory
+  mkdir -p "$EXPORT_DIR"
+  mkdir -p "$TEMP_EXPORT_DIR"
+
+  log "Export will be saved to: ${CYAN}${EXPORT_FILE}${RESET}"
+  log ""
+
+  # Step 1: Export database
+  log "📊 ${YELLOW}Step 1/5: Exporting database...${RESET}"
+
+  # Get database container name
+  DB_CONTAINER="${COMPOSE_PROJECT_NAME}-db-1"
+
+  # Check if database container is running
+  if ! docker ps --format "{{.Names}}" | grep -q "^${DB_CONTAINER}$"; then
+    abort "Database container ${DB_CONTAINER} is not running"
+  fi
+
+  # Export database using root user with password from environment
+  # The MariaDB container has MYSQL_ROOT_PASSWORD set
+  log "  Dumping database (this may take a moment)..."
+
+  if docker exec "$DB_CONTAINER" sh -c 'exec mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" --single-transaction --routines --triggers --add-drop-table --databases moodle' > "${TEMP_EXPORT_DIR}/database.sql" 2>"${TEMP_EXPORT_DIR}/db_export_error.log"; then
+    # Check if the file has content
+    if [ -s "${TEMP_EXPORT_DIR}/database.sql" ]; then
+      # Check for SQL content (not just empty or error messages)
+      if grep -q "CREATE TABLE\|INSERT INTO" "${TEMP_EXPORT_DIR}/database.sql" 2>/dev/null; then
+        DB_SIZE=$(du -h "${TEMP_EXPORT_DIR}/database.sql" | awk '{print $1}')
+        log "  ${GREEN}✓${RESET} Database exported (${DB_SIZE})"
+        rm -f "${TEMP_EXPORT_DIR}/db_export_error.log"
+      else
+        log "  ${RED}✗${RESET} Database dump appears to be invalid"
+        if [ -f "${TEMP_EXPORT_DIR}/db_export_error.log" ]; then
+          log "  Error details:"
+          cat "${TEMP_EXPORT_DIR}/db_export_error.log"
+        fi
+        abort "Database export failed - dump file contains no valid SQL"
+      fi
+    else
+      log "  ${RED}✗${RESET} Database dump is empty"
+      abort "Failed to export database - no data exported"
+    fi
+  else
+    log "  ${RED}✗${RESET} Database export command failed"
+    if [ -f "${TEMP_EXPORT_DIR}/db_export_error.log" ]; then
+      log "  Error details:"
+      cat "${TEMP_EXPORT_DIR}/db_export_error.log"
+    fi
+    abort "Failed to export database"
+  fi
+
+  # Step 2: Export Moodle files (www)
+  log ""
+  log "📁 ${YELLOW}Step 2/5: Exporting Moodle files...${RESET}"
+
+  # Check if Moodle files exist
+  if [ -d "$MOODLE_DOCKER_WWWROOT" ]; then
+    # Calculate size first
+    WWW_SIZE=$(du -sh "$MOODLE_DOCKER_WWWROOT" 2>/dev/null | awk '{print $1}')
+    log "  Compressing Moodle files (${WWW_SIZE})..."
+
+    # Create tar excluding .git and other unnecessary files
+    tar -czf "${TEMP_EXPORT_DIR}/moodle-www.tar.gz" \
+      -C "$MOODLE_DOCKER_WWWROOT" \
+      --exclude='.git' \
+      --exclude='.gitignore' \
+      --exclude='node_modules' \
+      --exclude='.grunt' \
+      --exclude='.npm' \
+      . 2>/dev/null
+
+    log "  ${GREEN}✓${RESET} Moodle files exported"
+  else
+    abort "Moodle files directory not found: $MOODLE_DOCKER_WWWROOT"
+  fi
+
+  # Step 3: Export moodledata
+  log ""
+  log "💾 ${YELLOW}Step 3/5: Exporting moodledata...${RESET}"
+
+  # Export moodledata from container
+  WEBSERVER_CONTAINER="${COMPOSE_PROJECT_NAME}-webserver-1"
+
+  # Check moodledata size in container
+  MOODLEDATA_SIZE=$(docker exec "$WEBSERVER_CONTAINER" du -sh /var/www/moodledata 2>/dev/null | awk '{print $1}')
+  log "  Compressing moodledata (${MOODLEDATA_SIZE})..."
+
+  # Export moodledata, excluding cache and temp files for smaller export
+  docker exec "$WEBSERVER_CONTAINER" tar -czf - \
+    -C /var/www/moodledata \
+    --exclude='cache/*' \
+    --exclude='temp/*' \
+    --exclude='trashdir/*' \
+    --exclude='sessions/*' \
+    --exclude='localcache/*' \
+    . > "${TEMP_EXPORT_DIR}/moodledata.tar.gz" 2>/dev/null
+
+  if [ -f "${TEMP_EXPORT_DIR}/moodledata.tar.gz" ]; then
+    log "  ${GREEN}✓${RESET} Moodledata exported (cache excluded)"
+  else
+    log "  ${YELLOW}⚠${RESET} Moodledata export may be incomplete"
+  fi
+
+  # Step 4: Create metadata file
+  log ""
+  log "📝 ${YELLOW}Step 4/5: Creating metadata...${RESET}"
+
+  cat > "${TEMP_EXPORT_DIR}/metadata.json" <<EOF
+{
+  "moodle_version": "$ARG2_SELECTED_VERSION",
+  "php_version": "$MOODLE_DOCKER_PHP_VERSION",
+  "db_type": "mariadb",
+  "export_date": "$(date -Iseconds)",
+  "export_host": "$(hostname)",
+  "docker_project": "$COMPOSE_PROJECT_NAME",
+  "web_port": "$MOODLE_DOCKER_WEB_PORT",
+  "db_port": "$MOODLE_DOCKER_DB_PORT",
+  "export_tool_version": "$PLUGIN_VERSION"
+}
+EOF
+
+  log "  ${GREEN}✓${RESET} Metadata created"
+
+  # Step 5: Create final archive
+  log ""
+  log "📦 ${YELLOW}Step 5/5: Creating final archive...${RESET}"
+
+  # Create checksum file
+  cd "$TEMP_EXPORT_DIR" || exit
+  find . -type f -exec sha256sum {} \; > checksums.txt
+  cd - > /dev/null
+
+  # Create final tar.gz
+  tar -czf "$EXPORT_FILE" -C "$TEMP_EXPORT_DIR" . 2>/dev/null
+
+  # Clean up temp directory
+  rm -rf "$TEMP_EXPORT_DIR"
+
+  # Show final size
+  FINAL_SIZE=$(du -h "$EXPORT_FILE" | awk '{print $1}')
+
+  log "  ${GREEN}✓${RESET} Archive created"
+  log ""
+  log "========================================================================"
+  log "${GREEN}✅ Export completed successfully!${RESET}"
+  log "========================================================================"
+  log ""
+  log "📦 Export file: ${CYAN}${EXPORT_FILE}${RESET}"
+  log "📏 Size: ${GREEN}${FINAL_SIZE}${RESET}"
+  log ""
+  log "To import on another machine:"
+  log "  ${GREEN}moodle-docker import ${ARG2_SELECTED_VERSION} ${EXPORT_FILE}${RESET}"
+  log ""
+  log "${YELLOW}Note: Share this file with your team members to replicate the exact environment.${RESET}"
+
+# IMPORT COMMAND
+# ----------------------------------------------------------------
+elif [ "$ARG1_ACTION" == "import" ]; then
+  log ""
+  log "========================================================================"
+  log "${GREEN}📥 Importing Moodle $ARG2_SELECTED_VERSION Environment${RESET}"
+  log "========================================================================"
+  log ""
+
+  # Get import file path
+  IMPORT_FILE="${1}"
+
+  if [ -z "$IMPORT_FILE" ]; then
+    log "${RED}❌ Error: Import file required${RESET}"
+    log ""
+    log "Usage: moodle-docker import ${ARG2_SELECTED_VERSION} <export-file.tar.gz>"
+    log ""
+    log "Available exports:"
+    if [ -d "${SCRIPT_DIR_MOODLE_DOCKER}/exports" ]; then
+      ls -lh "${SCRIPT_DIR_MOODLE_DOCKER}/exports/"*.tar.gz 2>/dev/null | awk '{print "  " $9 " (" $5 ")"}'
+    else
+      log "  No exports found"
+    fi
+    exit 1
+  fi
+
+  # Check if import file exists
+  if [ ! -f "$IMPORT_FILE" ]; then
+    # Check if it's in the exports directory
+    if [ -f "${SCRIPT_DIR_MOODLE_DOCKER}/exports/${IMPORT_FILE}" ]; then
+      IMPORT_FILE="${SCRIPT_DIR_MOODLE_DOCKER}/exports/${IMPORT_FILE}"
+    elif [ -f "${SCRIPT_DIR_MOODLE_DOCKER}/exports/${IMPORT_FILE}.tar.gz" ]; then
+      IMPORT_FILE="${SCRIPT_DIR_MOODLE_DOCKER}/exports/${IMPORT_FILE}.tar.gz"
+    else
+      abort "Import file not found: $IMPORT_FILE"
+    fi
+  fi
+
+  log "Import file: ${CYAN}${IMPORT_FILE}${RESET}"
+  FILE_SIZE=$(du -h "$IMPORT_FILE" | awk '{print $1}')
+  log "Size: ${GREEN}${FILE_SIZE}${RESET}"
+  log ""
+
+  # Create temp directory for extraction
+  TEMP_IMPORT_DIR="${SCRIPT_DIR_MOODLE_DOCKER}/imports/temp-import-$(date +%Y%m%d-%H%M%S)"
+  mkdir -p "$TEMP_IMPORT_DIR"
+
+  # Step 1: Extract and validate archive
+  log "🔍 ${YELLOW}Step 1/7: Validating archive...${RESET}"
+
+  tar -xzf "$IMPORT_FILE" -C "$TEMP_IMPORT_DIR" 2>/dev/null
+
+  if [ ! -f "${TEMP_IMPORT_DIR}/metadata.json" ]; then
+    rm -rf "$TEMP_IMPORT_DIR"
+    abort "Invalid export file: metadata.json not found"
+  fi
+
+  # Read metadata
+  EXPORT_VERSION=$(grep '"moodle_version"' "${TEMP_IMPORT_DIR}/metadata.json" | cut -d'"' -f4)
+  EXPORT_PHP=$(grep '"php_version"' "${TEMP_IMPORT_DIR}/metadata.json" | cut -d'"' -f4)
+  EXPORT_DATE=$(grep '"export_date"' "${TEMP_IMPORT_DIR}/metadata.json" | cut -d'"' -f4)
+
+  log "  Export version: ${GREEN}${EXPORT_VERSION}${RESET}"
+  log "  Export PHP: ${GREEN}${EXPORT_PHP}${RESET}"
+  log "  Export date: ${GREEN}${EXPORT_DATE}${RESET}"
+
+  # Verify checksums if available
+  if [ -f "${TEMP_IMPORT_DIR}/checksums.txt" ]; then
+    log "  Verifying checksums..."
+    cd "$TEMP_IMPORT_DIR" || exit
+    if sha256sum -c checksums.txt > /dev/null 2>&1; then
+      log "  ${GREEN}✓${RESET} Checksums verified"
+    else
+      log "  ${YELLOW}⚠${RESET} Checksum verification failed (continuing anyway)"
+    fi
+    cd - > /dev/null
+  fi
+
+  # Warn if versions don't match
+  if [ "$EXPORT_VERSION" != "$ARG2_SELECTED_VERSION" ]; then
+    log ""
+    log "${YELLOW}⚠️  Warning: Version mismatch!${RESET}"
+    log "  Export version: ${EXPORT_VERSION}"
+    log "  Target version: ${ARG2_SELECTED_VERSION}"
+    log ""
+    if ! confirm "Continue with import anyway?"; then
+      rm -rf "$TEMP_IMPORT_DIR"
+      exit 1
+    fi
+  fi
+
+  # Step 2: Check if instance exists and offer backup
+  log ""
+  log "🔄 ${YELLOW}Step 2/7: Checking existing instance...${RESET}"
+
+  if [ -d "$MOODLE_DOCKER_WWWROOT" ]; then
+    log "  ${YELLOW}⚠${RESET} Existing Moodle instance found"
+
+    if confirm "Create backup of existing instance before import?"; then
+      log "  Creating backup..."
+      BACKUP_NAME="backup-before-import-$(date +%Y%m%d-%H%M%S)"
+      ./moodle-docker export "$ARG2_SELECTED_VERSION" "$BACKUP_NAME"
+      log "  ${GREEN}✓${RESET} Backup created: ${BACKUP_NAME}.tar.gz"
+    fi
+
+    # Stop existing containers
+    log "  Stopping existing containers..."
+    cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
+    bin/moodle-docker-compose down 2>/dev/null || true
+
+    # Remove existing files
+    log "  Removing existing files..."
+    rm -rf "$MOODLE_DOCKER_WWWROOT"
+    log "  ${GREEN}✓${RESET} Existing instance removed"
+  fi
+
+  # Step 3: Restore Moodle files
+  log ""
+  log "📁 ${YELLOW}Step 3/7: Restoring Moodle files...${RESET}"
+
+  mkdir -p "$MOODLE_DOCKER_WWWROOT"
+
+  if [ -f "${TEMP_IMPORT_DIR}/moodle-www.tar.gz" ]; then
+    tar -xzf "${TEMP_IMPORT_DIR}/moodle-www.tar.gz" -C "$MOODLE_DOCKER_WWWROOT" 2>/dev/null
+    log "  ${GREEN}✓${RESET} Moodle files restored"
+  else
+    abort "Moodle files not found in import"
+  fi
+
+  # Copy config.php
+  cp "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker/config.docker-template.php" "$MOODLE_DOCKER_WWWROOT/config.php"
+
+  # Step 4: Start containers
+  log ""
+  log "🐳 ${YELLOW}Step 4/7: Starting Docker containers...${RESET}"
+
+  cd "$SCRIPT_DIR_MOODLE_DOCKER/moodlehq-docker" || abort "moodlehq-docker is missing"
+  bin/moodle-docker-compose up -d
+
+  log "  ${GREEN}✓${RESET} Containers started"
+
+  # Step 5: Wait for database
+  log ""
+  log "⏳ ${YELLOW}Step 5/7: Waiting for database...${RESET}"
+
+  bin/moodle-docker-wait-for-db
+  log "  ${GREEN}✓${RESET} Database ready"
+
+  # Step 6: Restore database
+  log ""
+  log "📊 ${YELLOW}Step 6/7: Restoring database...${RESET}"
+
+  if [ -f "${TEMP_IMPORT_DIR}/database.sql" ]; then
+    # Get database container name
+    DB_CONTAINER="${COMPOSE_PROJECT_NAME}-db-1"
+
+    # Check if database container is running
+    if ! docker ps --format "{{.Names}}" | grep -q "^${DB_CONTAINER}$"; then
+      abort "Database container ${DB_CONTAINER} is not running"
+    fi
+
+    log "  Preparing database..."
+
+    # Drop and recreate database using root with password from environment
+    if ! docker exec "$DB_CONTAINER" sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS moodle;"' 2>"${TEMP_IMPORT_DIR}/db_import_error.log"; then
+      log "  ${YELLOW}⚠${RESET} Warning: Could not drop existing database (may not exist)"
+    fi
+
+    if ! docker exec "$DB_CONTAINER" sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS moodle DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"' 2>>"${TEMP_IMPORT_DIR}/db_import_error.log"; then
+      log "  ${RED}✗${RESET} Failed to create database"
+      if [ -f "${TEMP_IMPORT_DIR}/db_import_error.log" ]; then
+        cat "${TEMP_IMPORT_DIR}/db_import_error.log"
+      fi
+      abort "Could not create database"
+    fi
+
+    # Grant privileges to moodle user
+    docker exec "$DB_CONTAINER" sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "GRANT ALL PRIVILEGES ON moodle.* TO '"'"'moodle'"'"'@'"'"'%'"'"' IDENTIFIED BY '"'"'m@0dl3ing'"'"'; FLUSH PRIVILEGES;"' 2>/dev/null || true
+
+    log "  Importing database (this may take a moment)..."
+
+    # Import the database dump
+    # First check if dump already contains CREATE DATABASE statement
+    if grep -q "^CREATE DATABASE" "${TEMP_IMPORT_DIR}/database.sql" 2>/dev/null; then
+      # Database dump contains CREATE DATABASE, use it as-is
+      if docker exec "$DB_CONTAINER" sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < "${TEMP_IMPORT_DIR}/database.sql" 2>"${TEMP_IMPORT_DIR}/db_import_error.log"; then
+        log "  ${GREEN}✓${RESET} Database imported successfully"
+      else
+        log "  ${RED}✗${RESET} Database import failed"
+        if [ -f "${TEMP_IMPORT_DIR}/db_import_error.log" ] && [ -s "${TEMP_IMPORT_DIR}/db_import_error.log" ]; then
+          log "  Error details:"
+          head -20 "${TEMP_IMPORT_DIR}/db_import_error.log"
+        fi
+        abort "Failed to import database"
+      fi
+    else
+      # Database dump doesn't contain CREATE DATABASE, import into moodle database
+      if docker exec "$DB_CONTAINER" sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" moodle' < "${TEMP_IMPORT_DIR}/database.sql" 2>"${TEMP_IMPORT_DIR}/db_import_error.log"; then
+        log "  ${GREEN}✓${RESET} Database imported successfully"
+      else
+        log "  ${RED}✗${RESET} Database import failed"
+        if [ -f "${TEMP_IMPORT_DIR}/db_import_error.log" ] && [ -s "${TEMP_IMPORT_DIR}/db_import_error.log" ]; then
+          log "  Error details:"
+          head -20 "${TEMP_IMPORT_DIR}/db_import_error.log"
+        fi
+        abort "Failed to import database"
+      fi
+    fi
+
+    # Update database configuration
+    log "  Updating database configuration..."
+
+    # Update wwwroot in config table
+    docker exec "$DB_CONTAINER" mysql -uroot moodle -e \
+      "UPDATE mdl_config SET value='http://localhost:${MOODLE_DOCKER_WEB_PORT}' WHERE name='wwwroot';" 2>/dev/null || true
+
+    # Also update in mdl_config_plugins if it exists
+    docker exec "$DB_CONTAINER" mysql -uroot moodle -e \
+      "UPDATE mdl_config_plugins SET value='http://localhost:${MOODLE_DOCKER_WEB_PORT}' WHERE name='wwwroot';" 2>/dev/null || true
+
+    log "  ${GREEN}✓${RESET} Database configuration updated"
+
+    # Clean up error log if empty
+    if [ -f "${TEMP_IMPORT_DIR}/db_import_error.log" ] && [ ! -s "${TEMP_IMPORT_DIR}/db_import_error.log" ]; then
+      rm -f "${TEMP_IMPORT_DIR}/db_import_error.log"
+    fi
+  else
+    abort "Database dump not found in import file"
+  fi
+
+  # Step 7: Restore moodledata
+  log ""
+  log "💾 ${YELLOW}Step 7/7: Restoring moodledata...${RESET}"
+
+  if [ -f "${TEMP_IMPORT_DIR}/moodledata.tar.gz" ]; then
+    WEBSERVER_CONTAINER="${COMPOSE_PROJECT_NAME}-webserver-1"
+
+    # Clear existing moodledata (except what we need to keep)
+    docker exec "$WEBSERVER_CONTAINER" sh -c "rm -rf /var/www/moodledata/*" 2>/dev/null || true
+
+    # Extract moodledata
+    docker exec -i "$WEBSERVER_CONTAINER" tar -xzf - -C /var/www/moodledata < "${TEMP_IMPORT_DIR}/moodledata.tar.gz" 2>/dev/null
+
+    # Fix permissions
+    docker exec "$WEBSERVER_CONTAINER" chown -R www-data:www-data /var/www/moodledata 2>/dev/null
+
+    log "  ${GREEN}✓${RESET} Moodledata restored"
+  else
+    log "  ${YELLOW}⚠${RESET} Moodledata not found (will be recreated)"
+  fi
+
+  # Clean up temp directory
+  rm -rf "$TEMP_IMPORT_DIR"
+
+  # Purge caches
+  log ""
+  log "🔄 Purging caches..."
+  bin/moodle-docker-compose exec webserver php admin/cli/purge_caches.php 2>/dev/null || true
+  log "  ${GREEN}✓${RESET} Caches purged"
+
+  log ""
+  log "========================================================================"
+  log "${GREEN}✅ Import completed successfully!${RESET}"
+  log "========================================================================"
+  log ""
+  log "🌐 ${GREEN}Moodle is now available at:${RESET}"
+  log "  URL: ${CYAN}http://localhost:$MOODLE_DOCKER_WEB_PORT/${RESET}"
+  log "  Login: ${CYAN}admin / test${RESET}"
+  log ""
+  log "${YELLOW}Note: Some paths and settings may need manual adjustment.${RESET}"
+  log "${YELLOW}Run 'moodle-docker update ${ARG2_SELECTED_VERSION}' if you added new plugins.${RESET}"
 
 else
   log "Unknown command $ARG1_ACTION"
