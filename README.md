@@ -1,17 +1,21 @@
 # Moodle Docker Brew
 
-Homebrew-installable helper for running MoodleHQ’s official `moodle-docker` stack on macOS with OrbStack. Start multiple Moodle versions side-by-side, run Behat and PHPUnit, and iterate on plugins quickly.
+Helper for running MoodleHQ’s official `moodle-docker` stack on macOS with OrbStack. 
+Start multiple Moodle versions side-by-side, run Behat and PHPUnit, and iterate on plugins quickly. 
+This make it easier to run a Moodle test environment with all tools a developer needs.
+
 
 ## Highlights
 
 - Wrapper around the official Moodle developer Docker image (https://github.com/moodlehq/moodle-docker)
 - macOS + OrbStack optimized workflow (fast, simple)
 - Homebrew formula: `moodle-docker`
-- Run multiple Moodle versions concurrently
+- Run multiple Moodle and Workplace versions concurrently
+  - For WorkPlace a Git repository need to be configured currently this hardcode to `git@gitlab.avetica.net:moodle-source/moodle-workplace.git`
 - Built-in runners for `behat` and `phpunit`
 - Safety checks before doing destructive actions
 - Persistent data under `~/moodle-docker-brew/moodle` (when installed via Homebrew)
-- Supported versions: dev (latest), 5.0 (pre-release), 4.5, 4.4, 4.3, 4.2, 4.1, 4.0, 3.11, 3.10, 3.9
+- Supported versions: dev (latest), 5.0, 4.5, 4.4, 4.3, 4.2, 4.1, 4.0, 3.11, 3.10, 3.9
 - Port convention per version: web `80NN`, DB `330NN`, VNC `590NN` (e.g., 8042/33042/59042 for 4.2)
 - Development version uses special ports: web `8099`, DB `33099`, VNC `59099`
 - Default admin credentials: `admin` / `test`
@@ -20,8 +24,9 @@ Homebrew-installable helper for running MoodleHQ’s official `moodle-docker` st
 
 - macOS
 - Docker via OrbStack (`brew install orbstack`)
-- git and unzip available on PATH
+- `git` and `unzip` available on PATH
 - GitHub SSH key configured for `upgrade` (clones `moodlehq/moodle-docker` via SSH)
+- Access to a Workplace installation
 
 ## Install
 
@@ -41,7 +46,8 @@ cd moodle-docker-brew
 ./moodle-docker help
 ```
 
-> Note: When installed via Homebrew, Moodle data lives under `~/moodle-docker-brew/moodle`. Using `moodle-docker destroy` removes the data for the selected version.
+> Note: When installed via Homebrew, Moodle data lives under `~/moodle-docker-brew/moodle`. 
+> Using `moodle-docker destroy` removes the data for the selected version.
 
 ## Quick Start
 
@@ -69,7 +75,6 @@ moodle-docker destroy 42
 ## Step‑by‑Step Usage
 
 1) Start a Moodle version
-
 - Pick a supported version number (e.g., 42 for 4.2) and start it:
 
 ```bash
@@ -141,8 +146,6 @@ moodle-docker phpunit 42 auth/manual/tests/manual_test.php
 ```
 
 ## Behat Setup & Testing
-
-### Initial Setup
 
 - First-time init: Behat is initialized automatically when you run `moodle-docker start {version}`
 - Re-initialize after adding/updating plugins:
@@ -281,8 +284,7 @@ moodle-docker xdebug 42 enable
 
 ### Notes
 
-- Xdebug uses `host.docker.internal` on macOS/Windows
-- Linux users may need to use `localhost` or the host IP
+- Xdebug uses `host.docker.internal` on macOS
 - Performance is slower with Xdebug enabled - disable when not debugging
 
 ## Grunt (JS/CSS Build)
@@ -389,6 +391,7 @@ Supported Moodle versions and their download URLs are defined in `moodle_version
 ## To‑Do
 
 ### Core Features
+- [ ] Use an environment variable for Workplace GIT location: `git@gitlab.avetica.net:moodle-source/moodle-workplace.git` this should be added to `.bashrc` or `.zshrc`
 - [ ] Add developer/commander tools
 - [ ] Command to stop all running instances (`moodle-docker stop-all`)
 - [ ] Display all running Moodle versions (`moodle-docker status`)
@@ -398,8 +401,6 @@ Supported Moodle versions and their download URLs are defined in `moodle_version
 - [ ] Support for custom PHP versions override globally (not just per command)
 
 ### Database & Data Management
-- [ ] Add `moodle-docker db <version> [import|export|reset]` for database operations
-- [ ] Database backup/restore functionality
 - [ ] Upgrade to a higher Moodle version 
 - [ ] Easy swithing to another PHP version
 
@@ -410,49 +411,27 @@ Supported Moodle versions and their download URLs are defined in `moodle_version
 - [ ] Add `moodle-docker codechecker <version> [plugin_path]` for Moodle code checker
 - [ ] Add `moodle-docker profile <version>` for XHProf profiling
 
-### Plugin Management
-- [ ] Add `moodle-docker plugin install <version> <plugin_name>` from Moodle plugins directory
-- [ ] Add `moodle-docker plugin list <version>` to show installed plugins
-- [ ] Add `moodle-docker plugin remove <version> <plugin_name>`
-- [ ] Plugin development scaffolding (`moodle-docker plugin create <version> <type> <name>`)
-
-### Testing Enhancements
-- [ ] Add `moodle-docker test <version> --all` to run all tests (Behat + PHPUnit)
-- [ ] Parallel test execution support
-- [ ] Performance testing tools integration
-
 ### User & Configuration Management
-- [ ] Add `moodle-docker user <version> create|list|delete` for user management
-- [ ] Add `moodle-docker config <version> get|set <key> [value]` for config management
-- [ ] Add `moodle-docker admin <version>` to open admin interface directly
-- [ ] Language pack installation command
+- [ ] Language pack installation command , loads default configuration from `tool_developer` and also install this.
 
 ### Monitoring & Debugging
-- [ ] Add `moodle-docker monitor <version>` for real-time performance monitoring
 - [ ] Add `moodle-docker debug <version> [on|off]` to toggle debug mode
-- [ ] Email testing interface (`moodle-docker mail <version>`)
-- [ ] Add `moodle-docker profiler <version>` for performance profiling
 - [ ] Integration with browser developer tools
 
 ### Container Management
-- [ ] Health check status display
 - [ ] Auto-cleanup of unused containers/images
+- [ ] Allowing multiple containers for same Moodle version and give them a custom name.
 
 ### Documentation & UX
+- [ ] Video: Fresh installation on macOS with orbstack, homebrew 
 - [ ] Video: configure PhpStorm for plugin testing
 - [ ] Video: debugging with Xdebug and PHPStorm
-- [ ] Interactive setup wizard for first-time users
-- [ ] Command autocomplete for bash/zsh
-- [ ] Better error messages with suggested fixes
 - [ ] Add `moodle-docker doctor` for system diagnostics
 
 ### Integration Features
-- [ ] PHPStorm plugin for moodle-docker integration
-- [ ] Git hooks integration for pre-commit testing
 - [ ] Integration with Moodle Mobile app development
 
 ### Advanced Features
-- [ ] Load testing tools integration
 - [ ] Redis/Memcached cache backends
 
 ### Platform Support
